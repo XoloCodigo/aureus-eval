@@ -8,9 +8,11 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Register sub-seeders here as they are created, e.g.:
-        // $this->call(MxnCurrencySeeder::class);
-        // $this->call(MxHolidaysSeeder::class);
-        // $this->call(LftEmploymentTypeSeeder::class);
+        // Mexican market base data. Order matters: each seeder assumes the
+        // upstream Webkul seeders have already populated their base tables.
+        $this->call([
+            MxnCurrencySeeder::class,
+            LftEmploymentTypeSeeder::class,
+        ]);
     }
 }
