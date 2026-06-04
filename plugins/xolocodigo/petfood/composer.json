@@ -1,0 +1,37 @@
+{
+    "name": "xolocodigo/petfood",
+    "description": "Petfood manufacturing ERP plugin: Mexican market localization layer + petfood-specific traceability (immutable stock ledger, BOM versioning, bidirectional lot genealogy, quality control). Custom client/industry plugin for AureusERP — NEVER edits webkul core, always extends.",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "XoloCodigo",
+            "email": "ricardo96.mgz@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "XoloCodigo\\PetFood\\PetFoodServiceProvider"
+            ],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "XoloCodigo\\PetFood\\": "src/",
+            "XoloCodigo\\PetFood\\Database\\Factories\\": "database/factories/",
+            "XoloCodigo\\PetFood\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "XoloCodigo\\PetFood\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

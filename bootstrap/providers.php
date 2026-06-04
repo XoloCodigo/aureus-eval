@@ -29,6 +29,7 @@ use Webkul\TableViews\TableViewsServiceProvider;
 use Webkul\TimeOff\TimeOffServiceProvider;
 use Webkul\Timesheet\TimesheetServiceProvider;
 use Webkul\Website\WebsiteServiceProvider;
+use XoloCodigo\PetFood\PetFoodServiceProvider;
 
 return [
     AppServiceProvider::class,
@@ -60,4 +61,5 @@ return [
     TimesheetServiceProvider::class,
     WebsiteServiceProvider::class,
     PluginManagerServiceProvider::class,
+    PetFoodServiceProvider::class,
 ];
