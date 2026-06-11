@@ -3,6 +3,8 @@
 namespace XoloCodigo\PetFood;
 
 use Filament\Panel;
+use Webkul\PluginManager\Console\Commands\InstallCommand;
+use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
 
@@ -15,14 +17,21 @@ class PetFoodServiceProvider extends PackageServiceProvider
     public function configureCustomPackage(Package $package): void
     {
         $package->name(static::$name)
+            ->hasDependencies('products', 'inventories')
             ->hasViews()
             ->hasTranslations()
             ->hasMigrations([
-                // Add migrations here as they are created, e.g.:
-                // '2026_06_03_000000_add_mx_fiscal_ids_to_employees_employees',
+                '2026_06_04_120000_add_petfood_industry_columns_to_products_products',
             ])
             ->hasSeeder('XoloCodigo\\PetFood\\Database\\Seeders\\DatabaseSeeder')
-            ->runsMigrations();
+            ->runsMigrations()
+            ->hasInstallCommand(function (InstallCommand $command) {
+                $command
+                    ->installDependencies()
+                    ->runsMigrations()
+                    ->runsSeeders();
+            })
+            ->hasUninstallCommand(function (UninstallCommand $command) {});
     }
 
     public function packageRegistered(): void
