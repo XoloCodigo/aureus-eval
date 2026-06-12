@@ -22,6 +22,7 @@ class PetFoodServiceProvider extends PackageServiceProvider
             ->hasTranslations()
             ->hasMigrations([
                 '2026_06_04_120000_add_petfood_industry_columns_to_products_products',
+                '2026_06_11_120000_create_petfood_lot_genealogies_table',
             ])
             ->hasSeeder('XoloCodigo\\PetFood\\Database\\Seeders\\DatabaseSeeder')
             ->runsMigrations()
