@@ -26,9 +26,6 @@
         <testsuite name="SupportFeature">
             <directory>plugins/webkul/support/tests/Feature</directory>
         </testsuite>
-        <testsuite name="PetFoodFeature">
-            <directory>plugins/xolocodigo/petfood/tests/Feature</directory>
-        </testsuite>
     </testsuites>
     <source>
         <include>
