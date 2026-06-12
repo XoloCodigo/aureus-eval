@@ -34,6 +34,12 @@ class LftEmploymentTypeSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! Schema::hasTable('employees_employment_types')) {
+            $this->command?->warn('LftEmploymentTypeSeeder: skipped — employees_employment_types table does not exist.');
+
+            return;
+        }
+
         DB::table('employees_employment_types')->delete();
 
         $user = User::first();
