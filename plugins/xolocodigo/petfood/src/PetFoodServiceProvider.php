@@ -3,12 +3,14 @@
 namespace XoloCodigo\PetFood;
 
 use Filament\Panel;
+use Webkul\Inventory\Models\Move;
 use Webkul\Manufacturing\Models\Order;
 use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
 use XoloCodigo\PetFood\Traceability\Observers\ManufacturingOrderObserver;
+use XoloCodigo\PetFood\Traceability\Observers\ReceiptLotOriginObserver;
 
 class PetFoodServiceProvider extends PackageServiceProvider
 {
@@ -48,5 +50,6 @@ class PetFoodServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         Order::observe(ManufacturingOrderObserver::class);
+        Move::observe(ReceiptLotOriginObserver::class);
     }
 }
