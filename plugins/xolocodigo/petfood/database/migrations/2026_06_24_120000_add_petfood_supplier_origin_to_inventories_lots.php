@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Schema;
  * rather than relying on a fragile query through stock move lines.
  *
  *  - mx_supplier_id  — the partner (supplier) that delivered the material,
- *    populated automatically when a purchase receipt is validated.
+ *    populated automatically when a purchase receipt is validated. A plain
+ *    indexed column (no DB-level FK) to stay SQLite-friendly across alter
+ *    table; the relationship is handled in the application layer.
  *  - mx_supplier_lot — the supplier's own lot number, kept nullable until
  *    the client confirms whether and where they capture it.
  */
@@ -24,11 +26,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('inventories_lots', function (Blueprint $table) {
-            $table->foreignId('mx_supplier_id')
-                ->nullable()
-                ->constrained('partners_partners')
-                ->nullOnDelete();
-
+            $table->unsignedBigInteger('mx_supplier_id')->nullable();
             $table->string('mx_supplier_lot')->nullable();
         });
     }
@@ -37,7 +35,7 @@ return new class extends Migration
     {
         Schema::table('inventories_lots', function (Blueprint $table) {
             if (Schema::hasColumn('inventories_lots', 'mx_supplier_id')) {
-                $table->dropConstrainedForeignId('mx_supplier_id');
+                $table->dropColumn('mx_supplier_id');
             }
 
             if (Schema::hasColumn('inventories_lots', 'mx_supplier_lot')) {
