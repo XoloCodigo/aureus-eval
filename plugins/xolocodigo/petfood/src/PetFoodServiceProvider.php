@@ -28,6 +28,7 @@ class PetFoodServiceProvider extends PackageServiceProvider
                 '2026_06_04_120000_add_petfood_industry_columns_to_products_products',
                 '2026_06_11_120000_create_petfood_lot_genealogies_table',
                 '2026_06_24_120000_add_petfood_supplier_origin_to_inventories_lots',
+                '2026_06_25_120000_add_petfood_quality_role_to_inventories_locations',
             ])
             ->hasSeeder('XoloCodigo\\PetFood\\Database\\Seeders\\DatabaseSeeder')
             ->runsMigrations()
