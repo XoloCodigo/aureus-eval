@@ -31,6 +31,10 @@ class PetFoodPlugin implements Plugin
             ->discoverPages(
                 in: __DIR__.'/Traceability/Filament/Pages',
                 for: 'XoloCodigo\\PetFood\\Traceability\\Filament\\Pages'
+            )
+            ->discoverPages(
+                in: __DIR__.'/Quality/Filament/Pages',
+                for: 'XoloCodigo\\PetFood\\Quality\\Filament\\Pages'
             );
     }
 
