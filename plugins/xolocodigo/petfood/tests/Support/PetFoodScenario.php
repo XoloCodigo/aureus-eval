@@ -12,10 +12,13 @@ use Webkul\Inventory\Models\MoveLine;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Models\Warehouse;
 use Webkul\Manufacturing\Enums\ManufacturingOrderState;
+use Webkul\Manufacturing\Models\BillOfMaterial;
+use Webkul\Manufacturing\Models\BillOfMaterialLine;
 use Webkul\Manufacturing\Models\Order;
 use Webkul\Partner\Models\Partner;
 use Webkul\Product\Models\Product;
 use Webkul\Support\Models\Company;
+use XoloCodigo\PetFood\Recipes\Services\BomVersionService;
 
 require_once __DIR__.'/../../../../webkul/support/tests/Helpers/TestBootstrapHelper.php';
 
@@ -55,12 +58,16 @@ class PetFoodScenario
         if (! Schema::hasColumn('inventories_lots', 'mx_supplier_id')
             || ! Schema::hasColumn('inventories_locations', 'mx_quality_role')
             || ! Schema::hasTable('petfood_lot_genealogies')
+            || ! Schema::hasTable('petfood_bom_versions')
         ) {
             Artisan::call('migrate', [
                 '--path'  => 'plugins/xolocodigo/petfood/database/migrations',
                 '--force' => true,
             ]);
         }
+
+        // Forget per-request BOM-version grouping so each test starts clean.
+        app(BomVersionService::class)->resetRequestState();
     }
 
     /**
@@ -152,6 +159,37 @@ class PetFoodScenario
         ]);
 
         return $move->fresh();
+    }
+
+    /** An empty bill of materials (recipe). Add components with bomLine(). */
+    public static function billOfMaterial(): BillOfMaterial
+    {
+        $product = Product::factory()->create();
+
+        return BillOfMaterial::factory()->create([
+            'product_id' => $product->id,
+            'uom_id'     => $product->uom_id,
+        ]);
+    }
+
+    /**
+     * Add a component line to a recipe. Creating the line fires the
+     * BillOfMaterialLine observer, which versions the recipe.
+     */
+    public static function bomLine(BillOfMaterial $bom, Product $product, float $qty): BillOfMaterialLine
+    {
+        return BillOfMaterialLine::create([
+            'bill_of_material_id' => $bom->id,
+            'product_id'          => $product->id,
+            'uom_id'              => $product->uom_id,
+            'quantity'            => $qty,
+        ]);
+    }
+
+    /** Simulate a request boundary for BOM-version grouping (see BomVersionService). */
+    public static function newRequest(): void
+    {
+        app(BomVersionService::class)->resetRequestState();
     }
 
     /**
