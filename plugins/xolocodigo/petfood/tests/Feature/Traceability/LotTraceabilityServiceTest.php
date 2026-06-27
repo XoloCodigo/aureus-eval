@@ -4,25 +4,9 @@ use Webkul\Inventory\Models\Lot;
 use XoloCodigo\PetFood\Traceability\Models\LotGenealogy;
 use XoloCodigo\PetFood\Traceability\Services\LotTraceabilityService;
 
-require_once __DIR__.'/../../../../../webkul/support/tests/Helpers/TestBootstrapHelper.php';
+require_once __DIR__.'/../../Support/PetFoodScenario.php';
 
-beforeEach(function () {
-    TestBootstrapHelper::ensureERPInstalled();
-
-    // Install plugin chain in dependency order so ALTER TABLE migrations
-    // always run after the base table exists.
-    if (! Schema::hasTable('inventories_lots')) {
-        Artisan::call('inventories:install', ['--no-interaction' => true]);
-    }
-
-    if (! Schema::hasTable('manufacturing_orders')) {
-        Artisan::call('manufacturing:install', ['--no-interaction' => true]);
-    }
-
-    if (! Schema::hasTable('petfood_lot_genealogies')) {
-        Artisan::call('petfood:install', ['--no-interaction' => true]);
-    }
-});
+beforeEach(fn () => PetFoodScenario::bootstrap());
 
 it('traces backward from a raw-material lot to the finished-good lots it affected', function () {
     $service = app(LotTraceabilityService::class);
