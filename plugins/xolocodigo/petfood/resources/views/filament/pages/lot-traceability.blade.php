@@ -43,4 +43,23 @@
             @endforelse
         </x-filament::section>
     </div>
+
+    <x-filament::section>
+        <x-slot name="heading">Recall cerrado: clientes afectados</x-slot>
+        <x-slot name="description">Clientes que recibieron un lote de producto terminado que contiene el lote seleccionado.</x-slot>
+
+        @forelse ($affectedCustomers as $row)
+            <div class="flex flex-wrap items-center justify-between gap-2 py-1 text-sm border-b border-gray-100 dark:border-white/5 last:border-0">
+                <span class="font-medium">{{ $row['customer'] ?? 'Sin cliente' }}</span>
+                <span class="text-gray-500">
+                    lote {{ $row['lot'] ?? '#'.$row['lot_id'] }}
+                    @if ($row['product']) · {{ $row['product'] }} @endif
+                    · {{ rtrim(rtrim(number_format($row['quantity'], 4, '.', ','), '0'), '.') ?: '0' }}
+                    @if ($row['shipped_at']) · {{ \Illuminate\Support\Carbon::parse($row['shipped_at'])->format('Y-m-d') }} @endif
+                </span>
+            </div>
+        @empty
+            <div class="text-sm text-gray-500">Ningún cliente recibió este lote (ni productos que lo contienen).</div>
+        @endforelse
+    </x-filament::section>
 </x-filament-panels::page>

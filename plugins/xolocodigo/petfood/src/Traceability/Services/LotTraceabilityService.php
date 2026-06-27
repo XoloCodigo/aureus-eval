@@ -2,8 +2,12 @@
 
 namespace XoloCodigo\PetFood\Traceability\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Webkul\Inventory\Enums\LocationType;
+use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Models\Lot;
+use Webkul\Inventory\Models\MoveLine;
 use XoloCodigo\PetFood\Traceability\Models\LotGenealogy;
 
 class LotTraceabilityService
@@ -82,5 +86,42 @@ class LotTraceabilityService
             });
 
         return $results;
+    }
+
+    /**
+     * Recall cerrado: dado un lote de materia prima reclamado, devuelve los
+     * CLIENTES que recibieron lotes producidos (PT/WIP) que lo contienen.
+     * Combina la genealogía (MP -> PT) con las entregas a cliente, que ya viven
+     * en los moves del core (destino = ubicación CUSTOMER, partner = cliente).
+     * Una fila por entrega afectada.
+     *
+     * @return Collection<int, array{customer_id:?int, customer:?string, lot_id:int, lot:?string, product:?string, quantity:float, shipped_at:?Carbon}>
+     */
+    public function affectedCustomers(Lot $rawLot): Collection
+    {
+        $lotIds = $this->traceBackward($rawLot)
+            ->pluck('lot_id')
+            ->push($rawLot->id)
+            ->unique()
+            ->all();
+
+        return MoveLine::query()
+            ->whereIn('lot_id', $lotIds)
+            ->whereHas('move', function ($query) {
+                $query->where('state', MoveState::DONE)
+                    ->whereHas('destinationLocation', fn ($location) => $location->where('type', LocationType::CUSTOMER));
+            })
+            ->with(['move.partner', 'lot.product'])
+            ->get()
+            ->map(fn (MoveLine $line) => [
+                'customer_id' => $line->move->partner_id,
+                'customer'    => $line->move->partner?->name,
+                'lot_id'      => $line->lot_id,
+                'lot'         => $line->lot?->name,
+                'product'     => $line->lot?->product?->name,
+                'quantity'    => (float) $line->qty,
+                'shipped_at'  => $line->move->scheduled_at,
+            ])
+            ->values();
     }
 }

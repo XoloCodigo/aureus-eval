@@ -193,6 +193,36 @@ class PetFoodScenario
     }
 
     /**
+     * A DONE move whose destination is a CUSTOMER location (i.e. a delivery)
+     * carrying $lot, attributed to $customer. This is what the closed recall
+     * (affectedCustomers) reads — no observer involved, so it is left DONE.
+     */
+    public static function customerDelivery(?Partner $customer, Product $product, Lot $lot, float $qty): Move
+    {
+        $customerLocation = Location::factory()->create(['type' => LocationType::CUSTOMER]);
+
+        $move = Move::factory()->create([
+            'destination_location_id' => $customerLocation->id,
+            'partner_id'              => $customer?->id,
+            'product_id'              => $product->id,
+            'uom_id'                  => $product->uom_id,
+            'state'                   => MoveState::DRAFT,
+        ]);
+
+        MoveLine::factory()->done()->create([
+            'move_id'    => $move->id,
+            'product_id' => $product->id,
+            'uom_id'     => $product->uom_id,
+            'lot_id'     => $lot->id,
+            'qty'        => $qty,
+        ]);
+
+        $move->update(['state' => MoveState::DONE]);
+
+        return $move->fresh();
+    }
+
+    /**
      * Stock of a product/lot at a location, without firing an inventory
      * adjustment (inventory_diff_quantity = 0).
      */

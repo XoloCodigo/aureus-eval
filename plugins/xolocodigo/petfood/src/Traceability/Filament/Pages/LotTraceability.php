@@ -36,6 +36,9 @@ class LotTraceability extends Page
     /** @var array<int, array{lot_id:int, product_id:int, manufacturing_order_id:int, quantity:float, depth:int}> */
     public array $forward = [];
 
+    /** @var array<int, array{customer_id:?int, customer:?string, lot_id:int, lot:?string, product:?string, quantity:float, shipped_at:mixed}> */
+    public array $affectedCustomers = [];
+
     /**
      * @return array<int, string>
      */
@@ -53,6 +56,7 @@ class LotTraceability extends Page
         if (! $this->lotId) {
             $this->backward = [];
             $this->forward = [];
+            $this->affectedCustomers = [];
 
             return;
         }
@@ -67,5 +71,6 @@ class LotTraceability extends Page
 
         $this->backward = $service->traceBackward($lot)->all();
         $this->forward = $service->traceForward($lot)->all();
+        $this->affectedCustomers = $service->affectedCustomers($lot)->all();
     }
 }
