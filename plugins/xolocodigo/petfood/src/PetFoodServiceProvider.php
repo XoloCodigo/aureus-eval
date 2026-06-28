@@ -2,6 +2,7 @@
 
 namespace XoloCodigo\PetFood;
 
+use BladeUI\Icons\Factory as IconFactory;
 use Filament\Panel;
 use Webkul\Inventory\Models\Move;
 use Webkul\Manufacturing\Models\BillOfMaterialLine;
@@ -52,6 +53,14 @@ class PetFoodServiceProvider extends PackageServiceProvider
 
         Panel::configureUsing(function (Panel $panel): void {
             $panel->plugin(PetFoodPlugin::make());
+        });
+
+        // Monochrome (currentColor) module icons, resolved as `petfood-{name}`.
+        $this->callAfterResolving(IconFactory::class, function (IconFactory $factory): void {
+            $factory->add('petfood', [
+                'path'   => __DIR__.'/../resources/svg',
+                'prefix' => 'petfood',
+            ]);
         });
     }
 

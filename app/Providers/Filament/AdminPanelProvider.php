@@ -61,25 +61,25 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('icon-dashboard'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.contact'))
-                    ->icon('icon-contacts'),
+                    ->icon('petfood-crm'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.sale'))
-                    ->icon('icon-sales'),
+                    ->icon('petfood-ventas'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.purchase'))
-                    ->icon('icon-purchases'),
+                    ->icon('petfood-compras'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.manufacturing'))
-                    ->icon('icon-manufacturing'),
+                    ->icon('petfood-fabricacion'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.inventory'))
-                    ->icon('icon-inventories'),
+                    ->icon('petfood-inventario'),
                 NavigationGroup::make()
                     ->label('Calidad e Inocuidad')
-                    ->icon('heroicon-o-shield-check'),
+                    ->icon('petfood-calidad'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.invoice'))
-                    ->icon('icon-invoices'),
+                    ->icon('petfood-facturas'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.accounting'))
                     ->icon('icon-accounting'),
@@ -88,22 +88,22 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('icon-projects'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.employee'))
-                    ->icon('icon-employees'),
+                    ->icon('petfood-empleados'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.time-off'))
-                    ->icon('icon-time-offs'),
+                    ->icon('petfood-ausencias'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.recruitment'))
-                    ->icon('icon-recruitments'),
+                    ->icon('petfood-rh'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.website'))
                     ->icon('icon-website'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.plugin'))
-                    ->icon('icon-plugin'),
+                    ->icon('petfood-complementos'),
                 NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.setting'))
-                    ->icon('icon-settings'),
+                    ->icon('petfood-configuracion'),
             ])
             ->plugins([
                 ManufacturingPlugin::make(),
