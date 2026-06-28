@@ -75,6 +75,9 @@ class AdminPanelProvider extends PanelProvider
                     ->label(fn (): string => __('admin.navigation.inventory'))
                     ->icon('icon-inventories'),
                 NavigationGroup::make()
+                    ->label('Calidad e Inocuidad')
+                    ->icon('heroicon-o-shield-check'),
+                NavigationGroup::make()
                     ->label(fn (): string => __('admin.navigation.invoice'))
                     ->icon('icon-invoices'),
                 NavigationGroup::make()

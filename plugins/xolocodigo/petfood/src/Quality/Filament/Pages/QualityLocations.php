@@ -19,6 +19,10 @@ class QualityLocations extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shield-exclamation';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Calidad e Inocuidad';
+
+    protected static ?int $navigationSort = 2;
+
     protected static ?string $navigationLabel = 'Ubicaciones de calidad';
 
     protected static ?string $title = 'Ubicaciones de calidad';

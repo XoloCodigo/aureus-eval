@@ -15,9 +15,13 @@ class BomVersions extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
-    protected static ?string $navigationLabel = 'Versiones de receta';
+    protected static string|\UnitEnum|null $navigationGroup = 'Calidad e Inocuidad';
 
-    protected static ?string $title = 'Versiones de receta';
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationLabel = 'Control de cambios de receta';
+
+    protected static ?string $title = 'Control de cambios de receta';
 
     protected string $view = 'petfood::filament.pages.bom-versions';
 

@@ -22,6 +22,10 @@ class LotTraceability extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrows-right-left';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Calidad e Inocuidad';
+
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $navigationLabel = 'Genealogía de lotes';
 
     protected static ?string $title = 'Genealogía de lotes';
