@@ -191,6 +191,8 @@ class PetFoodDemoSeeder extends Seeder
             'enable_sales' => true,
             'is_storable'  => true, // physical good tracked by stock/lot; non-storable
             // products crash the core forecast (Move::getForecastAvailabilityAttribute).
+            'tracking'     => 'lot', // lot-tracked so production assigns a PT lot
+            // (producing_lot) — required for the genealogy observer to capture.
             'category_id'  => $category?->id,
             'uom_id'       => $uom->id,
             'uom_po_id'    => $uom->id,
