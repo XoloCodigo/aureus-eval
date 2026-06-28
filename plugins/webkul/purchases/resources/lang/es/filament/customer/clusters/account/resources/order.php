@@ -32,12 +32,12 @@ return [
                     'label' => 'Aceptar',
 
                     'notification' => [
-                        'title' => 'Presupuesto aceptado',
-                        'body'  => 'La solicitud de presupuesto se ha confirmado correctamente.',
+                        'title' => 'Cotización aceptada',
+                        'body'  => 'La solicitud de cotización se ha confirmado correctamente.',
                     ],
 
                     'message' => [
-                        'body' => 'La solicitud de presupuesto ha sido confirmada por el proveedor.',
+                        'body' => 'La solicitud de cotización ha sido confirmada por el proveedor.',
                     ],
                 ],
 
@@ -45,12 +45,12 @@ return [
                     'label' => 'Rechazar',
 
                     'notification' => [
-                        'title' => 'Presupuesto rechazado',
-                        'body'  => 'La solicitud de presupuesto se ha rechazado correctamente.',
+                        'title' => 'Cotización rechazada',
+                        'body'  => 'La solicitud de cotización se ha rechazado correctamente.',
                     ],
 
                     'message' => [
-                        'body' => 'La solicitud de presupuesto ha sido rechazada por el proveedor.',
+                        'body' => 'La solicitud de cotización ha sido rechazada por el proveedor.',
                     ],
                 ],
 
@@ -63,7 +63,7 @@ return [
         'general' => [
             'entries' => [
                 'purchase-order'        => 'Pedido de compra n.º :id',
-                'quotation'             => 'Solicitud de presupuesto n.º :id',
+                'quotation'             => 'Solicitud de cotización n.º :id',
                 'order-date'            => 'Fecha del pedido',
                 'from'                  => 'De',
                 'confirmation-date'     => 'Fecha de confirmación',

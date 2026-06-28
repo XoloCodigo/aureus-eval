@@ -2,6 +2,6 @@
 
 return [
     'navigation' => [
-        'title' => 'Presupuestos',
+        'title' => 'Cotizaciones',
     ],
 ];

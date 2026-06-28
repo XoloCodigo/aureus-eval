@@ -23,7 +23,7 @@ return [
             'notification' => [
                 'warning' => [
                     'title' => 'No se puede cerrar el acuerdo de compra',
-                    'body'  => 'No se puede cerrar este acuerdo de compra porque algunas solicitudes de presupuesto relacionadas no están en estado Realizado o Cancelado.',
+                    'body'  => 'No se puede cerrar este acuerdo de compra porque algunas solicitudes de cotización relacionadas no están en estado Realizado o Cancelado.',
                 ],
             ],
         ],

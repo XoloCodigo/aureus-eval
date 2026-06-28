@@ -2,6 +2,6 @@
 
 return [
     'header-actions' => [
-        'create' => 'Nueva solicitud de presupuesto',
+        'create' => 'Nueva solicitud de cotización',
     ],
 ];

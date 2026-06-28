@@ -2,6 +2,6 @@
 
 return [
     'navigation' => [
-        'title' => 'Solicitud de presupuesto',
+        'title' => 'Solicitud de cotización',
     ],
 ];

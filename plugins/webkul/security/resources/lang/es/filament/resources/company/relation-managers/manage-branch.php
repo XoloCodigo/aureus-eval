@@ -13,8 +13,8 @@ return [
                         'fields' => [
                             'company-name'                => 'Nombre de la empresa',
                             'registration-number'         => 'Número de registro',
-                            'tax-id'                      => 'Tax ID',
-                            'tax-id-tooltip'              => 'El Tax ID es un identificador único de la empresa.',
+                            'tax-id'                      => 'RFC',
+                            'tax-id-tooltip'              => 'El RFC es un identificador único de la empresa.',
                             'color'                       => 'Color',
                             'company-id'                  => 'ID de empresa',
                             'company-id-tooltip'          => 'El ID de empresa es un identificador único de la empresa.',
@@ -196,8 +196,8 @@ return [
                         'entries' => [
                             'company-name'                => 'Nombre de la empresa',
                             'registration-number'         => 'Número de registro',
-                            'tax-id'                      => 'Tax ID',
-                            'registration-number-tooltip' => 'El Tax ID es un identificador único de la empresa.',
+                            'tax-id'                      => 'RFC',
+                            'registration-number-tooltip' => 'El RFC es un identificador único de la empresa.',
                             'color'                       => 'Color',
                         ],
                     ],

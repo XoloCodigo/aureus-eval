@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'label' => 'Imprimir solicitud de presupuesto',
+    'label' => 'Imprimir solicitud de cotización',
 ];

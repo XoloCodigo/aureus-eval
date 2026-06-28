@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'draft'      => 'Solicitud de presupuesto',
-    'sent'       => 'Solicitud de presupuesto enviada',
+    'draft'      => 'Solicitud de cotización',
+    'sent'       => 'Solicitud de cotización enviada',
     'to_approve' => 'Por aprobar',
     'purchase'   => 'Pedido de compra',
     'done'       => 'Bloqueado',

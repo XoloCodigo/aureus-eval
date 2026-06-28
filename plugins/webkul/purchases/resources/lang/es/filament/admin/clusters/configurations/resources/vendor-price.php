@@ -13,9 +13,9 @@ return [
                 'fields' => [
                     'vendor'                      => 'Proveedor',
                     'vendor-product-name'         => 'Nombre del producto del proveedor',
-                    'vendor-product-name-tooltip' => 'El nombre del producto del proveedor aparecerá en la solicitud de presupuesto. Dejar en blanco para usar el nombre interno del producto.',
+                    'vendor-product-name-tooltip' => 'El nombre del producto del proveedor aparecerá en la solicitud de cotización. Dejar en blanco para usar el nombre interno del producto.',
                     'vendor-product-code'         => 'Código del producto del proveedor',
-                    'vendor-product-code-tooltip' => 'El código del producto del proveedor aparecerá en la solicitud de presupuesto. Dejar en blanco para usar el código interno.',
+                    'vendor-product-code-tooltip' => 'El código del producto del proveedor aparecerá en la solicitud de cotización. Dejar en blanco para usar el código interno.',
                     'delay'                       => 'Plazo de entrega (días)',
                     'delay-tooltip'               => 'El plazo de entrega (en días) desde la confirmación del pedido de compra hasta la recepción del producto en el almacén. Lo utiliza el planificador para la planificación automática de pedidos de compra.',
                 ],
@@ -121,9 +121,9 @@ return [
                 'entries' => [
                     'vendor'                      => 'Proveedor',
                     'vendor-product-name'         => 'Nombre del producto del proveedor',
-                    'vendor-product-name-tooltip' => 'El nombre del producto del proveedor aparecerá en la solicitud de presupuesto. Dejar en blanco para usar el nombre interno del producto.',
+                    'vendor-product-name-tooltip' => 'El nombre del producto del proveedor aparecerá en la solicitud de cotización. Dejar en blanco para usar el nombre interno del producto.',
                     'vendor-product-code'         => 'Código del producto del proveedor',
-                    'vendor-product-code-tooltip' => 'El código del producto del proveedor aparecerá en la solicitud de presupuesto. Dejar en blanco para usar el código interno.',
+                    'vendor-product-code-tooltip' => 'El código del producto del proveedor aparecerá en la solicitud de cotización. Dejar en blanco para usar el código interno.',
                     'delay'                       => 'Plazo de entrega (días)',
                     'delay-tooltip'               => 'El plazo de entrega (en días) desde la confirmación del pedido de compra hasta la recepción del producto en el almacén. Lo utiliza el planificador para la planificación automática de pedidos de compra.',
                 ],

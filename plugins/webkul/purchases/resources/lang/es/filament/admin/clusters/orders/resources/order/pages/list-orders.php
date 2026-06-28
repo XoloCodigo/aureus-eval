@@ -9,10 +9,10 @@ return [
         'my-purchases'    => 'Mis compras',
         'starred'         => 'Destacados',
         'purchase-orders' => 'Pedidos de compra',
-        'orders'          => 'Solicitudes de presupuesto',
-        'draft-orders'    => 'Solicitudes de presupuesto en borrador',
-        'waiting-orders'  => 'Solicitudes de presupuesto en espera',
-        'late-orders'     => 'Solicitudes de presupuesto atrasadas',
+        'orders'          => 'Solicitudes de cotización',
+        'draft-orders'    => 'Solicitudes de cotización en borrador',
+        'waiting-orders'  => 'Solicitudes de cotización en espera',
+        'late-orders'     => 'Solicitudes de cotización atrasadas',
     ],
 
     'header-actions' => [

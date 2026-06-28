@@ -52,7 +52,7 @@ return [
                 'name'          => 'Nombre',
                 'job-title'     => 'Puesto de trabajo',
                 'work-email'    => 'Correo electrónico laboral',
-                'work-mobile'   => 'Móvil laboral',
+                'work-mobile'   => 'Celular laboral',
                 'work-phone'    => 'Teléfono laboral',
                 'manager'       => 'Gerente',
                 'department'    => 'Departamento',

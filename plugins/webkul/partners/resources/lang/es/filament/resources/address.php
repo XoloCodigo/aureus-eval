@@ -6,7 +6,7 @@ return [
         'name'    => 'Nombre',
         'email'   => 'Correo electrónico',
         'phone'   => 'Teléfono',
-        'mobile'  => 'Móvil',
+        'mobile'  => 'Celular',
         'type'    => 'Tipo',
         'address' => 'Dirección',
         'city'    => 'Ciudad',
