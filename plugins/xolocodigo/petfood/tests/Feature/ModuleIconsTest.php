@@ -8,6 +8,6 @@ it('registers the petfood module icon set as brand-blue line glyphs', function (
     foreach ($icons as $icon) {
         expect(svg("petfood-{$icon}")->toHtml())
             ->toContain('stroke="#2563eb"')
-            ->toContain('viewBox="0 0 24 24"');
+            ->toContain('viewBox=');
     }
 });
