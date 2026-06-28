@@ -184,16 +184,18 @@ class PetFoodDemoSeeder extends Seeder
     private function product(string $name, string $itemType, UOM $uom, ?Category $category, int $companyId, ?int $userId): Product
     {
         $product = Product::query()->create([
-            'type'        => 'goods',
-            'name'        => $name,
-            'price'       => 0,
-            'cost'        => 0,
+            'type'         => 'goods',
+            'name'         => $name,
+            'price'        => 0,
+            'cost'         => 0,
             'enable_sales' => true,
-            'category_id' => $category?->id,
-            'uom_id'      => $uom->id,
-            'uom_po_id'   => $uom->id,
-            'company_id'  => $companyId,
-            'creator_id'  => $userId,
+            'is_storable'  => true, // physical good tracked by stock/lot; non-storable
+            // products crash the core forecast (Move::getForecastAvailabilityAttribute).
+            'category_id'  => $category?->id,
+            'uom_id'       => $uom->id,
+            'uom_po_id'    => $uom->id,
+            'company_id'   => $companyId,
+            'creator_id'   => $userId,
         ]);
         $product->mx_item_type = $itemType;
         $product->save();
