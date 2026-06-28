@@ -103,6 +103,12 @@ return [
             'flag'   => 'us',
             'rtl'    => false,
         ],
+        'es' => [
+            'label'  => 'Spanish',
+            'native' => 'Español',
+            'flag'   => 'mx',
+            'rtl'    => false,
+        ],
         'ar' => [
             'label'  => 'Arabic',
             'native' => 'العربية',
