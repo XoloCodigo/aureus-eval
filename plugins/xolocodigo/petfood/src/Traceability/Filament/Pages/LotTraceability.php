@@ -5,6 +5,7 @@ namespace XoloCodigo\PetFood\Traceability\Filament\Pages;
 use BackedEnum;
 use Filament\Pages\Page;
 use Webkul\Inventory\Models\Lot;
+use Webkul\Product\Models\Product;
 use XoloCodigo\PetFood\Traceability\Services\LotTraceabilityService;
 
 /**
@@ -73,8 +74,29 @@ class LotTraceability extends Page
 
         $service = app(LotTraceabilityService::class);
 
-        $this->backward = $service->traceBackward($lot)->all();
-        $this->forward = $service->traceForward($lot)->all();
+        $this->backward = $this->withNames($service->traceBackward($lot)->all());
+        $this->forward = $this->withNames($service->traceForward($lot)->all());
         $this->affectedCustomers = $service->affectedCustomers($lot)->all();
+    }
+
+    /**
+     * Enrich genealogy nodes with readable lot and product names for display.
+     *
+     * @param  array<int, array<string, mixed>>  $nodes
+     * @return array<int, array<string, mixed>>
+     */
+    private function withNames(array $nodes): array
+    {
+        if ($nodes === []) {
+            return $nodes;
+        }
+
+        $lots = Lot::query()->whereIn('id', array_column($nodes, 'lot_id'))->pluck('name', 'id');
+        $products = Product::query()->whereIn('id', array_column($nodes, 'product_id'))->pluck('name', 'id');
+
+        return array_map(fn (array $node): array => $node + [
+            'lot_name'     => $lots[$node['lot_id']] ?? ('#'.$node['lot_id']),
+            'product_name' => $products[$node['product_id']] ?? ('#'.$node['product_id']),
+        ], $nodes);
     }
 }

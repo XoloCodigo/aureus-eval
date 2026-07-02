@@ -22,7 +22,7 @@
 
             @forelse ($backward as $node)
                 <div class="text-sm">
-                    Lote #{{ $node['lot_id'] }} · producto #{{ $node['product_id'] }}
+                    Lote {{ $node['lot_name'] }} · {{ $node['product_name'] }}
                     · cantidad {{ $node['quantity'] }} · nivel {{ $node['depth'] }}
                 </div>
             @empty
@@ -35,7 +35,7 @@
 
             @forelse ($forward as $node)
                 <div class="text-sm">
-                    Lote #{{ $node['lot_id'] }} · producto #{{ $node['product_id'] }}
+                    Lote {{ $node['lot_name'] }} · {{ $node['product_name'] }}
                     · cantidad {{ $node['quantity'] }} · nivel {{ $node['depth'] }}
                 </div>
             @empty
