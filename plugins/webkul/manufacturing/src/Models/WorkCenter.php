@@ -329,7 +329,7 @@ class WorkCenter extends Model implements Sortable
     public function unblock()
     {
         if ($this->working_state !== WorkCenterWorkingState::BLOCKED) {
-            throw new \Exception('It has already been unblocked.');
+            throw new \Exception(__('manufacturing::system.work-center.already-unblocked'));
         }
 
         $this->productivityLogs()->whereNull('finished_at')->update(['finished_at' => now()]);

@@ -13,6 +13,7 @@ use Webkul\Chatter\Traits\HasChatter;
 use Webkul\Chatter\Traits\HasLogActivity;
 use Webkul\Field\Traits\HasCustomFields;
 use Webkul\Inventory\Database\Factories\OperationFactory;
+use Webkul\Inventory\Filament\Clusters\Operations\Resources\OperationResource;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\MoveType;
 use Webkul\Inventory\Enums\OperationState;
@@ -22,11 +23,13 @@ use Webkul\Partner\Models\Partner;
 use Webkul\Purchase\Models\Order as PurchaseOrder;
 use Webkul\Sale\Models\Order as SaleOrder;
 use Webkul\Security\Models\User;
+use Webkul\Security\Traits\HasPermissionScope;
 use Webkul\Support\Models\Company;
+use Throwable;
 
 class Operation extends Model
 {
-    use HasChatter, HasCustomFields, HasFactory, HasLogActivity;
+    use HasChatter, HasCustomFields, HasFactory, HasLogActivity, HasPermissionScope;
 
     public const ACTIVITY_PLAN_PLUGIN = 'inventories';
 
@@ -85,6 +88,15 @@ class Operation extends Model
         return __('inventories::models/operation.title');
     }
 
+    public function getChatterResourceUrl(): string
+    {
+        try {
+            return OperationResource::getUrl('view', ['record' => $this], panel: 'admin');
+        } catch (Throwable $e) {
+            return '';
+        }
+    }
+
     protected function getLogAttributeLabels(): array
     {
         return [
@@ -116,6 +128,11 @@ class Operation extends Model
     public function return(): BelongsTo
     {
         return $this->belongsTo(self::class, 'return_id');
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(self::class, 'return_id');
     }
 
     public function user(): BelongsTo
@@ -203,6 +220,39 @@ class Operation extends Model
         return $this->belongsTo(SaleOrder::class, 'sale_order_id');
     }
 
+    public function nextTransfersQuery()
+    {
+        $returnIds = $this->returns()->pluck('id');
+
+        $nextTransferIds = $this->moves()
+            ->with(['moveDestinations:id,operation_id'])
+            ->get()
+            ->flatMap(fn (Move $move) => $move->moveDestinations->pluck('operation_id'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $query = self::query()
+            ->whereIn('id', $nextTransferIds)
+            ->distinct();
+
+        if ($returnIds->isNotEmpty()) {
+            $query->whereNotIn('id', $returnIds);
+        }
+
+        return $query;
+    }
+
+    public function nextTransfers()
+    {
+        return $this->nextTransfersQuery()->get();
+    }
+
+    public function getShowNextOperationsAttribute(): bool
+    {
+        return $this->nextTransfersQuery()->exists();
+    }
+
     protected static function newFactory(): OperationFactory
     {
         return OperationFactory::new();
@@ -228,12 +278,23 @@ class Operation extends Model
             if ($operation->wasChanged('operation_type_id')) {
                 $operation->updateChildrenNames();
             }
+
+            if (
+                $operation->wasChanged('source_location_id')
+                || $operation->wasChanged('destination_location_id')
+            ) {
+                $operation->moves->each(function($move) use ($operation) {
+                    $move->source_location_id = $operation->source_location_id ?? $operation->operationType?->source_location_id;
+
+                    $move->destination_location_id = $operation->destination_location_id ?? $operation->operationType?->destination_location_id;
+
+                    $move->save();
+                });
+            }
         });
 
         static::saving(function ($operation) {
             $operation->updateName();
-
-            $operation->autoConfirm();
         });
 
         static::saved(function ($operation) {
@@ -255,9 +316,14 @@ class Operation extends Model
             return;
         }
 
-        $movesToConfirm = $this->moves->filter(fn ($move) => $move->state === MoveState::DRAFT);
+        if ($this->moves->some(fn ($move) => $move->additional)) {
+            InventoryFacade::confirmTransfer($this);
+        }
+
+        $movesToConfirm = $this->moves->filter(fn ($move) => $move->state === MoveState::DRAFT && $move->quantity);
 
         InventoryFacade::confirmMoves($movesToConfirm);
+
     }
 
     public function updateName()
@@ -373,5 +439,35 @@ class Operation extends Model
         $explore($moves);
 
         return $impactedOperations->unique('id');
+    }
+
+
+    public function getEntirePackDestinationLocation($moveLines)
+    {
+        $destinationLocationIds = $moveLines
+            ->pluck('destination_location_id')
+            ->unique()
+            ->values();
+
+        if ($destinationLocationIds->count() > 1) {
+            return false;
+        }
+
+        return $destinationLocationIds->first();
+    }
+
+    public function checkMoveLinesMapQuant($moveLines, Package $package): mixed
+    {
+        return $package->checkMoveLinesMapQuant(
+            $moveLines->filter(fn ($moveLine) => $moveLine->product->is_storable)
+        );
+    }
+
+    public function checkMoveLinesMapQuantPackage(Package $package): mixed
+    {
+        return $this->checkMoveLinesMapQuant(
+            $this->moveLines->filter(fn ($moveLine) => $moveLine->package_id === $package->id),
+            $package
+        );
     }
 }

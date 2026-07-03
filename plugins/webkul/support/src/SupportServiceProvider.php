@@ -67,13 +67,15 @@ class SupportServiceProvider extends PackageServiceProvider
                 '2026_05_01_065935_add_resource_columns_in_calendar_attendances_table',
             ])
             ->runsMigrations()
+            ->hasSettings([
+                '2026_06_12_000001_create_brand_settings',
+            ])
+            ->runsSettings()
             ->hasSeeder('Webkul\\Support\\Database\\Seeders\\DatabaseSeeder');
     }
 
     public function packageBooted(): void
     {
-        include __DIR__.'/helpers.php';
-
         Livewire::component('accept-invitation', AcceptInvitation::class);
 
         Gate::policy(Role::class, RolePolicy::class);
@@ -94,6 +96,8 @@ class SupportServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->scoped(SettingsRegistry::class);
+
         Panel::configureUsing(function (Panel $panel): void {
             $panel->plugin(SupportPlugin::make());
         });

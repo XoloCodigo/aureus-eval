@@ -9,12 +9,14 @@ use Webkul\Contact\Filament\Resources\PartnerResource\Pages\CreatePartner;
 use Webkul\Contact\Filament\Resources\PartnerResource\Pages\EditPartner;
 use Webkul\Contact\Filament\Resources\PartnerResource\Pages\ListPartners;
 use Webkul\Contact\Filament\Resources\PartnerResource\Pages\ManageAddresses;
+use Webkul\Contact\Filament\Resources\PartnerResource\Pages\ManageBankAccounts;
 use Webkul\Contact\Filament\Resources\PartnerResource\Pages\ManageContacts;
 use Webkul\Contact\Filament\Resources\PartnerResource\Pages\ViewPartner;
 use Webkul\Contact\Models\Partner;
 use Webkul\Partner\Filament\Resources\PartnerResource as BasePartnerResource;
 use Webkul\Partner\Filament\Resources\PartnerResource\RelationManagers\AddressesRelationManager;
 use Webkul\Partner\Filament\Resources\PartnerResource\RelationManagers\ContactsRelationManager;
+use Webkul\PluginManager\Package;
 
 class PartnerResource extends BasePartnerResource
 {
@@ -38,12 +40,18 @@ class PartnerResource extends BasePartnerResource
 
     public static function getRecordSubNavigation(Page $page): array
     {
-        return $page->generateNavigationItems([
+        $items = [
             ViewPartner::class,
             EditPartner::class,
             ManageContacts::class,
             ManageAddresses::class,
-        ]);
+        ];
+
+        if (Package::isPluginInstalled('accounts')) {
+            $items[] = ManageBankAccounts::class;
+        }
+
+        return $page->generateNavigationItems($items);
     }
 
     public static function getRelations(): array
@@ -63,7 +71,7 @@ class PartnerResource extends BasePartnerResource
 
     public static function getPages(): array
     {
-        return [
+        $pages = [
             'index'     => ListPartners::route('/'),
             'create'    => CreatePartner::route('/create'),
             'view'      => ViewPartner::route('/{record}'),
@@ -71,5 +79,11 @@ class PartnerResource extends BasePartnerResource
             'contacts'  => ManageContacts::route('/{record}/contacts'),
             'addresses' => ManageAddresses::route('/{record}/addresses'),
         ];
+
+        if (Package::isPluginInstalled('accounts')) {
+            $pages['bank-accounts'] = ManageBankAccounts::route('/{record}/bank-accounts');
+        }
+
+        return $pages;
     }
 }

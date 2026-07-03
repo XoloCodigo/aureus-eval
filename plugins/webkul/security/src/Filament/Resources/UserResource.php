@@ -572,7 +572,7 @@ class UserResource extends Resource
 
     protected static function getProtectedAdminRoleIds(): array
     {
-        $defaultRoleId = app(UserSettings::class)->default_role_id;
+        $defaultRoleId = settings(UserSettings::class)->default_role_id;
 
         $candidateNames = array_values(array_filter([
             config('filament-shield.panel_user.name'),

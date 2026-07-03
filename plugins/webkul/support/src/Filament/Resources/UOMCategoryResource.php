@@ -18,6 +18,10 @@ use Filament\Tables\Table;
 use Webkul\Support\Enums\UOMType;
 use Webkul\Support\Filament\Forms\Components\Repeater;
 use Webkul\Support\Models\UOMCategory;
+use Webkul\Support\Filament\Resources\UOMCategoryResource\Pages\CreateUOMCategory;
+use Webkul\Support\Filament\Resources\UOMCategoryResource\Pages\EditUOMCategory;
+use Webkul\Support\Filament\Resources\UOMCategoryResource\Pages\ListUOMCategories;
+use Webkul\Support\Filament\Resources\UOMCategoryResource\Pages\ViewUOMCategory;
 
 class UOMCategoryResource extends Resource
 {
@@ -95,9 +99,9 @@ class UOMCategoryResource extends Resource
                     ->label(__('support::filament/resources/uom-category.table.columns.name'))
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('uoms_count')
-                    ->label(__('support::filament/resources/uom-category.table.columns.uoms-count'))
-                    ->counts('uoms')
+                TextColumn::make('uoms.name')
+                    ->label(__('support::filament/resources/uom-category.table.columns.uoms'))
+                    ->badge()
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label(__('support::filament/resources/uom-category.table.columns.created-at'))
@@ -142,5 +146,15 @@ class UOMCategoryResource extends Resource
                         ),
                 ]),
             ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index'  => ListUOMCategories::route('/'),
+            'create' => CreateUOMCategory::route('/create'),
+            'view'   => ViewUOMCategory::route('/{record}'),
+            'edit'   => EditUOMCategory::route('/{record}/edit'),
+        ];
     }
 }

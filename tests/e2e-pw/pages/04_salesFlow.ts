@@ -7,9 +7,12 @@ export type SalesCustomerData = {
     email?: string;
 };
 
+export type InvoicePolicy = "order" | "delivery";
+
 export type SalesProductData = {
     name: string;
     price: string;
+    invoicePolicy?: InvoicePolicy;
 };
 
 export type SalesQuotationData = {
@@ -98,6 +101,11 @@ export class SalesFlowPage {
         await this.erpLocators.salesProductNameInput.fill(product.name);
         await this.erpLocators.salesProductPriceInput.fill(product.price);
 
+        if (product.invoicePolicy) {
+            // invoice_policy renders as a native <select>; pick by its option value.
+            await this.erpLocators.salesProductInvoicePolicySelect.selectOption(product.invoicePolicy);
+        }
+
         await this.erpLocators.salesProductCreateButton.click();
         await this.expectSuccessToast();
     }
@@ -181,10 +189,23 @@ export class SalesFlowPage {
     }
 
     async createInvoice() {
+        await expect(this.erpLocators.salesQuotationCreateInvoiceButton).toBeVisible();
         await this.erpLocators.salesQuotationCreateInvoiceButton.click();
         await expect(this.erpLocators.salesQuotationInvoiceSubmitButton).toBeVisible();
         await this.erpLocators.salesQuotationInvoiceSubmitButton.click();
         await this.expectSuccessToast();
+    }
+
+    // With the "Ordered Quantities" policy the Create Invoice button is shown as soon as the
+    // order is confirmed.
+    async expectCreateInvoiceButtonVisible() {
+        await expect(this.erpLocators.salesQuotationCreateInvoiceButton).toBeVisible();
+    }
+
+    // With the "Delivered Quantities" policy the Create Invoice action is hidden until there
+    // are delivered quantities to invoice, so the button is absent from the DOM.
+    async expectCreateInvoiceButtonHidden() {
+        await expect(this.erpLocators.salesQuotationCreateInvoiceButton).toHaveCount(0);
     }
 
     async sendQuotation() {
@@ -196,37 +217,41 @@ export class SalesFlowPage {
         await this.expectSuccessToast();
     }
 
-    async openInvoicesForCurrentQuotation(): Promise<string> {
+    // After confirmation a quotation becomes a sales order, so the record can live
+    // under either the "quotations" or the "orders" resource slug.
+    currentRecordRef(): { resource: string; id: string } {
         const url = this.page.url();
-        const match = url.match(/quotations\/(\d+)/);
+        const match = url.match(/\/(quotations|orders)\/(\d+)/);
 
         if (!match) {
-            throw new Error(`Unable to determine quotation id from URL: ${url}`);
+            throw new Error(`Unable to determine quotation/order id from URL: ${url}`);
         }
 
-        const quotationId = match[1];
-        await this.page.goto(`/admin/sale/orders/quotations/${quotationId}/invoices`);
-        await expect(this.page).toHaveURL(new RegExp(`/quotations/${quotationId}/invoices`));
+        return { resource: match[1], id: match[2] };
+    }
+
+    async gotoOrderEdit(ref: { resource: string; id: string }) {
+        await this.page.goto(`/admin/sale/orders/${ref.resource}/${ref.id}/edit`);
+        await this.page.waitForLoadState("networkidle");
+    }
+
+    async openInvoicesForCurrentQuotation(): Promise<string> {
+        const { resource, id } = this.currentRecordRef();
+        await this.page.goto(`/admin/sale/orders/${resource}/${id}/invoices`);
+        await expect(this.page).toHaveURL(new RegExp(`/${resource}/${id}/invoices`));
         await expect(this.erpLocators.salesInvoicesTable.first()).toBeVisible();
 
-        return quotationId;
+        return id;
     }
 
     async openDeliveriesForCurrentQuotation(): Promise<string> {
-        const url = this.page.url();
-        const match = url.match(/quotations\/(\d+)/);
-
-        if (!match) {
-            throw new Error(`Unable to determine quotation id from URL: ${url}`);
-        }
-
-        const quotationId = match[1];
+        const { resource, id } = this.currentRecordRef();
         await this.page.waitForLoadState("networkidle");
-        await this.page.goto(`/admin/sale/orders/quotations/${quotationId}/deliveries`, { waitUntil: "domcontentloaded" });
-        await expect(this.page).toHaveURL(new RegExp(`/quotations/${quotationId}/deliveries`));
+        await this.page.goto(`/admin/sale/orders/${resource}/${id}/deliveries`, { waitUntil: "domcontentloaded" });
+        await expect(this.page).toHaveURL(new RegExp(`/${resource}/${id}/deliveries`));
         await expect(this.erpLocators.salesQuotationDeliveriesTable.first()).toBeVisible();
 
-        return quotationId;
+        return id;
     }
 
     async validateFirstDeliveryForCurrentQuotation() {

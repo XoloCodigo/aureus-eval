@@ -37,7 +37,7 @@ return [
     'table' => [
         'columns' => [
             'name'       => 'Name',
-            'uoms-count' => 'Units',
+            'uoms'       => 'UOMs',
             'created-at' => 'Created At',
             'updated-at' => 'Updated At',
         ],

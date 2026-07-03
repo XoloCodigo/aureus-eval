@@ -99,11 +99,11 @@ class ManufacturingManager
     public function unplanManufacturingOrder(Order $order)
     {
         if ($order->workOrders->some(fn ($workOrder) => $workOrder->state === WorkOrderState::DONE)) {
-            throw new \Exception(__("Some work orders are already done, so you cannot un-plan this manufacturing order.\n\nIt'd be a shame to waste all that progress, right?"));
+            throw new \Exception(__('manufacturing::system.manufacturing-manager.unplan-order.work-orders-already-done'));
         }
 
         if ($order->workOrders->some(fn ($workOrder) => $workOrder->state === WorkOrderState::PROGRESS)) {
-            throw new \Exception(__("Some work orders have already started, so you cannot un-plan this manufacturing order.\n\nIt'd be a shame to waste all that progress, right?"));
+            throw new \Exception(__('manufacturing::system.manufacturing-manager.unplan-order.work-orders-already-started'));
         }
 
         $order->workOrders->each(function ($workOrder) {

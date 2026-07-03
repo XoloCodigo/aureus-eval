@@ -11,6 +11,7 @@ use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
 use Filament\Schemas\Schema;
 use Filament\View\LegacyComponents\Widget;
+use Webkul\PluginManager\Package;
 use Webkul\Website\Filament\Admin\Widgets\BlogAuthorsChart;
 use Webkul\Website\Filament\Admin\Widgets\BlogChart;
 use Webkul\Website\Filament\Admin\Widgets\BlogStatusPieChart;
@@ -72,14 +73,16 @@ class WebsiteDashboard extends BaseDashboard
      */
     public function getWidgets(): array
     {
-        return [
+        return array_filter([
             StatsOverview::class,
-            BlogChart::class,
-            CategoriesPieChart::class,
-            BlogAuthorsChart::class,
-            BlogStatusPieChart::class,
-            TopCategoriesTable::class,
-            RecentBlogsTable::class,
-        ];
+            ...(Package::isPluginInstalled('blogs') ? [
+                BlogChart::class,
+                CategoriesPieChart::class,
+                BlogAuthorsChart::class,
+                BlogStatusPieChart::class,
+                TopCategoriesTable::class,
+                RecentBlogsTable::class,
+            ] : []),
+        ]);
     }
 }

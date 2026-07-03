@@ -65,10 +65,13 @@ class SaleManager
         $record->update([
             'state'          => OrderState::SALE,
             'invoice_status' => InvoiceStatus::TO_INVOICE,
-            'locked'         => $this->quotationAndOrderSettings->enable_lock_confirm_sales,
         ]);
 
         $this->applyInventoryRules($record->lines);
+
+        $record->update([
+            'locked' => $this->quotationAndOrderSettings->enable_lock_confirm_sales,
+        ]);
 
         $record = $this->computeSaleOrder($record);
 
@@ -161,10 +164,6 @@ class SaleManager
 
         $record->refresh();
 
-        $lines = $record->lines->filter(fn ($line) => $line->state === OrderState::SALE);
-
-        $this->applyInventoryRules($lines);
-
         return $record;
     }
 
@@ -177,7 +176,7 @@ class SaleManager
 
         $line = $this->computeQtyDelivered($line);
 
-        $line->qty_to_invoice = $line->qty_delivered - $line->qty_invoiced;
+        $line = $this->computeQtyToInvoice($line);
 
         $subTotal = $line->price_unit * $line->product_qty;
 
@@ -276,6 +275,23 @@ class SaleManager
             }
 
             $line->qty_delivered = $qty;
+        }
+
+        return $line;
+    }
+
+    public function computeQtyToInvoice(OrderLine $line): OrderLine
+    {
+        $policy = $line->product?->invoice_policy ?? $line->product?->parent?->invoice_policy ?? $this->invoiceSettings->invoice_policy->value;
+
+        if ($line->state == OrderState::SALE && ! $line->display_type) {
+            if ($policy === InvoicePolicy::ORDER->value) {
+                $line->qty_to_invoice = $line->product_uom_qty - $line->qty_invoiced;
+            } else {
+                $line->qty_to_invoice = $line->qty_delivered - $line->qty_invoiced;
+            }
+        } else {
+            $line->qty_to_invoice = 0.0;
         }
 
         return $line;
@@ -780,6 +796,6 @@ class SaleManager
             return;
         }
 
-        $record->operations->each(fn ($operation) => InventoryFacade::cancelOperation($operation));
+        $record->operations->each(fn ($operation) => InventoryFacade::cancelTransfer($operation));
     }
 }

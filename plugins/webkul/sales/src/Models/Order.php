@@ -19,10 +19,10 @@ use Webkul\Field\Traits\HasCustomFields;
 use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\ProcurementGroup;
 use Webkul\Inventory\Models\Warehouse;
-use Webkul\Partner\Models\Partner;
 use Webkul\PluginManager\Package;
 use Webkul\Sale\Database\Factories\OrderFactory;
 use Webkul\Sale\Enums\InvoiceStatus;
+use Webkul\Sale\Enums\OrderDeliveryStatus;
 use Webkul\Sale\Enums\OrderState;
 use Webkul\Security\Models\User;
 use Webkul\Security\Traits\HasPermissionScope;
@@ -82,14 +82,16 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'state'          => OrderState::class,
-        'invoice_status' => InvoiceStatus::class,
-        'amount_tax'     => 'decimal:4',
-        'amount_total'   => 'decimal:4',
-        'amount_untaxed' => 'decimal:4',
-        'validity_date'  => 'date',
-        'date_order'     => 'date',
-        'signed_on'      => 'date',
+        'state'           => OrderState::class,
+        'invoice_status'  => InvoiceStatus::class,
+        'delivery_status' => OrderDeliveryStatus::class,
+        'amount_tax'      => 'decimal:4',
+        'amount_total'    => 'decimal:4',
+        'amount_untaxed'  => 'decimal:4',
+        'validity_date'   => 'date',
+        'date_order'      => 'date',
+        'signed_on'       => 'date',
+        'locked'          => 'boolean',
     ];
 
     public function getLogAttributeLabels(): array
@@ -140,6 +142,11 @@ class Order extends Model
     public function accountMoves(): BelongsToMany
     {
         return $this->belongsToMany(Move::class, 'sales_order_invoices', 'order_id', 'move_id');
+    }
+
+    public function invoices(): BelongsToMany
+    {
+        return $this->belongsToMany(Invoice::class, 'sales_order_invoices', 'order_id', 'move_id');
     }
 
     public function partnerInvoice()
@@ -263,6 +270,8 @@ class Order extends Model
 
         static::saving(function ($order) {
             $order->updateName();
+
+            $order->lines->each->update(['state' => $order->state]);
         });
 
         static::created(function ($order) {
@@ -276,7 +285,7 @@ class Order extends Model
             return;
         }
 
-        $this->warehouse_id = Warehouse::where('company_id', $this->company_id)->first()?->id;
+        $this->warehouse_id ??= Warehouse::where('company_id', $this->company_id)->first()?->id;
     }
 
     protected static function newFactory(): OrderFactory

@@ -193,6 +193,8 @@ class Move extends BaseMove
 
         static::saving(function ($move) {
             $move->warehouse_id = $move->operationType?->warehouse_id;
+            
+            $move->mo_operation_id = $move->bomLine?->operation_id;
         });
     }
 

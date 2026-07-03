@@ -10,6 +10,7 @@ use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\MoveType;
 use Webkul\Inventory\Enums\OperationState;
 use Webkul\Inventory\Enums\OperationType;
+use Webkul\Inventory\Enums\PackageUse;
 use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Enums\ReservationMethod;
@@ -28,10 +29,12 @@ use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Models\MoveLine;
 use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\Package as PackageModel;
+use Webkul\Inventory\Models\PackageLevel;
 use Webkul\Inventory\Models\Product;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Models\Rule;
 use Webkul\PluginManager\Package;
+use Webkul\Product\Enums\ProductType;
 use Webkul\Purchase\Enums as PurchaseOrderEnums;
 use Webkul\Purchase\Models\OrderLine as PurchaseOrderLine;
 use Webkul\Purchase\Models\PurchaseOrder;
@@ -68,7 +71,7 @@ class InventoryManager
             ]);
 
         if ($moves->isEmpty()) {
-            throw new \Exception('Nothing to check the availability for.');
+            throw new \Exception(__('inventories::system.inventory-manager.check-availability.no-moves'));
         }
 
         $this->assignMoves($moves);
@@ -307,10 +310,12 @@ class InventoryManager
 
         if ($merge) {
             $moves = $this->mergeMoves($moves, mergeInto: $mergeInto)
-                ->map(fn ($move) => Move::find($move->id));
+                ->map(fn ($move) => Move::find($move->id))
+                ->filter();
         }
 
-        $negReturnMoves = $moves->filter(fn (Move $move) => float_compare($move->product_uom_qty, 0, precisionRounding: $move->uom->rounding) < 0
+        $negReturnMoves = $moves->filter(
+            fn (Move $move) => float_compare($move->product_uom_qty, 0, precisionRounding: $move->uom->rounding) < 0
         );
 
         $negToPush = $negReturnMoves->filter(
@@ -420,7 +425,7 @@ class InventoryManager
 
         $movesMto = $movesToAssign->filter(fn ($move) => $move->moveOrigins->isNotEmpty() && ! $move->shouldBypassReservation());
 
-        $quantityCache = ProductQuantity::getQuantsByProductsLocations($movesMto->pluck('product_id'), $movesMto->pluck('source_location_id'));
+        $quantityCache = ProductQuantity::getQuantitiesByProductsLocations($movesMto->pluck('product_id'), $movesMto->pluck('source_location_id'));
 
         foreach ($movesToAssign as $move) {
             $rounding = $roundings[$move->id];
@@ -610,6 +615,17 @@ class InventoryManager
         Move::whereIn('id', $partiallyAssignedMovesIds)->get()->each(fn ($move) => $move->update(['state' => MoveState::PARTIALLY_ASSIGNED]));
 
         Move::whereIn('id', $assignedMovesIds)->get()->each(fn ($move) => $move->update(['state' => MoveState::ASSIGNED]));
+
+        foreach ($moves as $move){
+            $this->checkForEntirePack($move->operation);
+        }
+
+        $moveLines = Move::whereIn('id', $movesToRedirect)
+            ->with('lines')
+            ->get()
+            ->flatMap(fn ($move) => $move->lines);
+
+        $this->applyPutawayStrategy($moveLines);
     }
 
     public function doneMoves($moves, $cancelBackOrder = false)
@@ -675,10 +691,7 @@ class InventoryManager
 
         foreach ($resultPackages as $resultPackage) {
             $locationCount = $resultPackage->quantities
-                ->filter(fn ($quantity) => ! float_is_zero(
-                    abs($quantity->quantity) + abs($quantity->reserved_quantity),
-                    precisionRounding: $quantity->uom->rounding
-                ))
+                ->filter(fn($quantity) => float_compare($quantity->quantity, 0.0, precisionRounding: $quantity->uom->rounding) > 0)
                 ->pluck('location_id')
                 ->unique()
                 ->count();
@@ -720,14 +733,13 @@ class InventoryManager
         if ($operation && ! $cancelBackOrder) {
             $backOrder = $this->createBackOrder($operation);
 
-            // TODO:: implement this
-            // if ($backOrder->moves->some(fn($move) => $move->state === MoveState::ASSIGNED)) {
-            //     $backOrder->checkEntirePack();
-            // }
+            if ($backOrder?->moves->some(fn ($move) => $move->state === MoveState::ASSIGNED)) {
+                $this->checkForEntirePack($backOrder);
+            }
         }
 
         if ($movesTodo->isNotEmpty()) {
-            $this->checkQuantity($movesTodo);
+            $movesTodo->each(fn ($move) => $move->checkQuantity());
         }
 
         return $movesTodo;
@@ -736,7 +748,7 @@ class InventoryManager
     public function cancelMoves($moves)
     {
         if ($moves->some(fn ($move) => $move->state === MoveState::DONE && ! $move->is_scraped)) {
-            throw new \Exception(__('You cannot cancel a stock move that has been set to \'Done\'. Create a return in order to reverse the moves which took place.'));
+            throw new \Exception(__('inventories::system.inventory-manager.cancel-move.already-done'));
         }
 
         $movesToCancel = $moves->filter(
@@ -804,7 +816,7 @@ class InventoryManager
             }
 
             if ($move->state === MoveState::DONE) {
-                throw new \Exception(__("You can not unreserve a stock move that has been set to 'Done'."));
+                throw new \Exception(__('inventories::system.inventory-manager.unreserve-move.already-done'));
             }
 
             return true;
@@ -855,7 +867,7 @@ class InventoryManager
             $quantity = float_round($moveLine->qty, precisionDigits: 2, roundingMethod: 'HALF-UP');
 
             if (float_compare($uomQty, $quantity, precisionDigits: 2) !== 0) {
-                throw new \Exception(__('The quantity done for the product ":product" doesn\'t respect the rounding precision defined on the unit of measure ":unit". Please change the quantity done or the rounding precision of your unit of measure.', [
+                throw new \Exception(__('inventories::system.inventory-manager.validate.quantity-rounding-mismatch', [
                     'product' => $moveLine->product->name,
                     'unit'    => $moveLine->uom->name,
                 ]));
@@ -888,7 +900,7 @@ class InventoryManager
                     $moveLineIdsTrackedWithoutLot->push($moveLine->id);
                 }
             } elseif ($qtyDoneFloatCompared < 0) {
-                throw new \Exception(__('No negative quantities allowed'));
+                throw new \Exception(__('inventories::system.inventory-manager.validate.no-negative-quantities'));
             } elseif (! $moveLine->is_inventory) {
                 $moveLineIdsToDelete->push($moveLine->id);
             }
@@ -897,9 +909,9 @@ class InventoryManager
         foreach ($moveLineIdsToCheck as $key => $moveLineIds) {
             [$productId, $companyId] = explode('_', $key);
 
-            $moveLines = MoveLine::whereIn('id', $moveLineIds)->get();
+            $lines = MoveLine::whereIn('id', $moveLineIds)->get();
 
-            $lotNames = $moveLines->pluck('lot_name')->filter()->all();
+            $lotNames = $lines->pluck('lot_name')->filter()->all();
 
             $lots = Lot::where(function ($q) use ($companyId) {
                 $q->whereNull('company_id')->orWhere('company_id', $companyId);
@@ -909,7 +921,7 @@ class InventoryManager
                 ->get()
                 ->keyBy('name');
 
-            foreach ($moveLines as $moveLine) {
+            foreach ($lines as $moveLine) {
                 $lot = $lots->get($moveLine->lot_name);
 
                 if ($lot) {
@@ -929,7 +941,7 @@ class InventoryManager
                 ->map(fn ($name) => "- $name")
                 ->implode("\n");
 
-            throw new \Exception(__("You need to supply a Lot/Serial Number for product:\n:products", [
+            throw new \Exception(__('inventories::system.inventory-manager.validate.missing-lot-serial-number', [
                 'products' => $productNames,
             ]));
         }
@@ -944,13 +956,16 @@ class InventoryManager
 
         $moveLineIdsToIgnore = collect();
 
-        $quantityCache = ProductQuantity::getQuantsByProductsLocations(
+        $quantityCache = ProductQuantity::getQuantitiesByProductsLocations(
             $moveLinesTodo->pluck('product_id'),
             $moveLinesTodo->pluck('source_location_id')->merge($moveLinesTodo->pluck('destination_location_id'))->unique(),
-            extraDomain: [['lot_id', 'in', $moveLinesTodo->pluck('lot_id')->filter()->all()], ['lot_id', '=', null]],
+            extraFilters: [['lot_id', 'in', $moveLinesTodo->pluck('lot_id')->filter()->all()], ['lot_id', '=', null]],
         );
 
+
         foreach ($moveLinesTodo as $moveLine) {
+            $moveLine->refresh();
+            
             $moveLine->setContext([
                 'quantity_cache' => $quantityCache,
             ]);
@@ -1163,6 +1178,86 @@ class InventoryManager
         }
 
         return $moves->merge($mergedMoves)->reject(fn ($move) => $movesToDelete->contains('id', $move->id));
+    }
+
+    public function applyPutawayStrategy(mixed $moveLines): void
+    {
+        $groupedByPackage = $moveLines->groupBy(fn ($moveLine) => $moveLine->result_package_id);
+
+        foreach ($groupedByPackage as $packageId => $packageMoveLines) {
+            $excludedMoveLines = $packageMoveLines->pluck('id')->all();
+
+            $package = null;
+
+            if ($packageId) {
+                $package = PackageModel::find($packageId);
+            }
+
+            if ($package?->package_type_id) {
+                $bestLocation = $packageMoveLines->first()->move->destinationLocation
+                    ->getPutawayStrategy(
+                        product: null,
+                        package: $package,
+                        excludeMoveLineIds: $excludedMoveLines,
+                        products: $packageMoveLines->pluck('product')->all()
+                    );
+
+                $packageMoveLines->each(function ($moveLine) use ($bestLocation) {
+                    $moveLine->update(['destination_location_id' => $bestLocation->id]);
+
+                    $moveLine->packageLevel?->update(['destination_location_id' => $bestLocation->id]);
+                });
+            } elseif ($package) {
+                $usedLocations = collect();
+
+                foreach ($packageMoveLines as $moveLine) {
+                    if ($usedLocations->count() > 1) {
+                        break;
+                    }
+
+                    $location = $moveLine->move->destinationLocation
+                        ->getPutawayStrategy(
+                            product: $moveLine->product,
+                            quantity: $moveLine->qty,
+                            excludeMoveLineIds: $excludedMoveLines,
+                        );
+
+                    $moveLine->update(['destination_location_id' => $location->id]);
+
+                    $excludedMoveLines = array_diff($excludedMoveLines, [$moveLine->id]);
+
+                    $usedLocations->push($location->id);
+                }
+
+                if ($usedLocations->unique()->count() > 1) {
+                    $packageMoveLines->groupBy('move_id')->each(function ($groupedMoveLines, $moveId) {
+                        $move = Move::find($moveId);
+
+                        $groupedMoveLines->each->update(['destination_location_id' => $move->destination_location_id]);
+                    });
+                } else {
+                    $packageMoveLines->each(function ($moveLine) {
+                        $moveLine->packageLevel?->update(['destination_location_id' => $moveLine->destination_location_id]);
+                    });
+                }
+            } else {
+                foreach ($packageMoveLines as $moveLine) {
+                    $location = $moveLine->move->destinationLocation
+                        ->getPutawayStrategy(
+                            product: $moveLine->product,
+                            quantity: $moveLine->qty,
+                            packaging: $moveLine->move->productPackaging,
+                            excludeMoveLineIds: $excludedMoveLines,
+                        );
+
+                    if ($location->id !== $moveLine->destination_location_id) {
+                        $moveLine->update(['destination_location_id' => $location->id]);
+                    }
+
+                    $excludedMoveLines = array_diff($excludedMoveLines, [$moveLine->id]);
+                }
+            }
+        }
     }
 
     public function assignOperation($moves, $mergeInto = null)
@@ -1552,6 +1647,13 @@ class InventoryManager
         $procurementErrors = [];
 
         foreach ($procurements as $procurement) {
+            if (
+                $procurement['product']->type !== ProductType::GOODS
+                || float_is_zero($procurement['product_qty'], precisionRounding: $procurement['product_uom']->rounding)
+            ) {
+                continue;
+            }
+
             $procurement['values']['company'] = $procurement['values']['company'] ?? $procurement['location']->company;
             $procurement['values']['priority'] = $procurement['values']['priority'] ?? '0';
             $procurement['values']['planned'] = $procurement['values']['planned'] ?? now();
@@ -1559,7 +1661,7 @@ class InventoryManager
             $rule = $this->getRule($procurement['product'], $procurement['location'], $procurement['values']);
 
             if (! $rule) {
-                $error = __('No rule has been found to replenish ":product" in ":location".\nVerify the routes configuration on the product.', [
+                $error = __('inventories::system.inventory-manager.run-procurement.no-rule-found', [
                     'product'  => $procurement['product']->name,
                     'location' => $procurement['location']->full_name,
                 ]);
@@ -1603,7 +1705,7 @@ class InventoryManager
     {
         foreach ($procurements as [$procurement, $rule]) {
             if (! $rule->source_location_id) {
-                throw new \Exception(__('No source location defined on stock rule: :name!', [
+                throw new \Exception(__('inventories::system.inventory-manager.run-procurement.no-source-location', [
                     'name' => $rule->name,
                 ]));
             }
@@ -1657,7 +1759,7 @@ class InventoryManager
             ]);
 
             if ($move->lines->isNotEmpty()) {
-                $putAwayLocation = $move->destinationLocation->getPutAwayStrategy($move->product);
+                $putAwayLocation = $move->destinationLocation->getPutawayStrategy($move->product);
 
                 foreach ($move->lines as $moveLine) {
                     $moveLine->update([
@@ -1672,7 +1774,7 @@ class InventoryManager
         } else {
             $newMoveValues = $this->preparePushMoveCopyValues($rule, $move, $newScheduledAt);
 
-            $newMove = $move->replicate(['order_id', 'work_order_id'])->fill($newMoveValues);
+            $newMove = $move->replicate(['order_id', 'work_order_id', 'purchase_order_line_id'])->fill($newMoveValues);
 
             $newMove->save();
 
@@ -1739,12 +1841,9 @@ class InventoryManager
                 ->first();
 
             if (! $supplier && $procurement['values']['from_order_point'] ?? null) {
-                $msg = __(
-                    'There is no matching vendor price to generate the purchase order for product %s '.
-                    '(no vendor defined, minimum quantity not reached, dates not valid, ...). '.
-                    'Go on the product form and complete the list of vendors.',
-                    $procurement['product']->name
-                );
+                $msg = __('inventories::system.inventory-manager.run-procurement.no-vendor-price', [
+                    'product' => $procurement['product']->name,
+                ]);
 
                 $errors[] = [$procurement, $msg];
             } elseif (! $supplier) {
@@ -2189,7 +2288,7 @@ class InventoryManager
 
         return [
             'state'                   => OperationState::DRAFT,
-            'origin'                  => __('Return of :operation_name', ['operation_name' => $operation->name]),
+            'origin'                  => __('inventories::system.inventory-manager.return.origin', ['operation_name' => $operation->name]),
             'operation_type_id'       => $returnType?->id ?? $operation->operation_type_id,
             'source_location_id'      => $sourceLocation->id,
             'location_destination_id' => $destinationLocation->id,
@@ -2458,5 +2557,97 @@ class InventoryManager
         return $result;
     }
 
-    public function checkQuantity($moves) {}
+    public function checkForEntirePack($operation)
+    {
+        if (! $operation) {
+            return;
+        }
+
+        $groupedByPackage = $operation->moveLines->groupBy('package_id');
+
+        foreach ($groupedByPackage as $packageId => $packageMoveLines) {
+            if (! $packageId) {
+                continue;
+            }
+
+            $package  = PackageModel::find($packageId);
+
+            $operations = $packageMoveLines->pluck('operation')->unique('id');
+
+            if (! $operation->checkMoveLinesMapQuant($packageMoveLines, $package)) {
+                continue;
+            }
+
+            $packageLevelIds = $operations->flatMap->packageLevels->filter(fn ($packageLevel) => $packageLevel->package_id === $packageId);
+
+            $moveLinesToPack = $packageMoveLines->filter(
+                fn ($moveLine) => ! $moveLine->result_package_id &&
+                    ! in_array($moveLine->state, [MoveState::DONE, MoveState::CANCELED])
+            );
+
+            if ($packageLevelIds->isEmpty()) {
+                if ($operations->count() === 1) {
+                    $operation = $operations->first();
+
+                    $packageLocation = $operation->getEntirePackDestinationLocation($moveLinesToPack)
+                        ?? $operation->destination_location_id;
+
+                    $packageLevel = PackageLevel::create([
+                        'operation_id'            => $operation->id,
+                        'package_id'              => $package->id,
+                        'location_id'             => $package->location_id,
+                        'destination_location_id' => $packageLocation,
+                        'company_id'              => $operation->company_id,
+                    ]);
+
+                    $moveLinesToPack->each(function ($moveLine) use ($packageLevel) {
+                        $moveLine->update([
+                            'package_level_id' => $packageLevel->id,
+                        ]);
+                    });
+
+                    if ($package->package_use === PackageUse::DISPOSABLE) {
+                        $moveLinesToPack->each->update(['result_package_id' => $package->id]);
+                    }
+                }
+            } else {
+                $moveLinesInPackageLevel = $moveLinesToPack->filter(fn ($moveLine) => $moveLine->move?->package_level_id);
+
+                $moveLinesWithoutPackageLevel = $moveLinesToPack->diff($moveLinesInPackageLevel);
+
+                if ($package->package_use === PackageUse::DISPOSABLE) {
+                    $moveLinesInPackageLevel->merge($moveLinesWithoutPackageLevel)
+                        ->each->update(['result_package_id' => $package->id]);
+                }
+
+                foreach ($moveLinesInPackageLevel as $moveLine) {
+                    $moveLine->update(['package_level_id' => $moveLine->move->package_level_id]);
+                }
+
+                $moveLinesWithoutPackageLevel->each->update(['package_level_id' => $packageLevelIds->first()->id]);
+
+                $moveLinesByPackageLevel = $packageMoveLines->groupBy('package_level_id');
+
+                foreach ($packageLevelIds as $packageLevel) {
+                    $packageLevelMoveLines = $moveLinesByPackageLevel->get($packageLevel->id, collect());
+                    
+                    $packageLevelDestinationLocationId  = $operations->first()->getEntirePackDestinationLocation($packageLevelMoveLines)
+                        ?? $operations->first()->destination_location_id;
+
+                    if ($packageLevel->destination_location_id !== $packageLevelDestinationLocationId) {
+                        $packageLevel->update(['destination_location_id' => $packageLevelDestinationLocationId]);
+                    }
+                }
+
+                foreach ($moveLinesToPack->pluck('move')->unique('id') as $move) {
+                    if (
+                        $move->lines->every(fn($line) => $line->package_level_id)
+                        && $move->lines->pluck('package_level_id')->unique()->count() === 1
+                    ) {
+                        $move->update(['package_level_id' => $move->lines->first()->package_level_id]);
+                    }
+                }
+            }
+        }
+    }
 }

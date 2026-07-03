@@ -62,6 +62,7 @@ use Webkul\Manufacturing\Models\Product;
 use Webkul\Manufacturing\Models\WorkOrder;
 use Webkul\Manufacturing\Settings\OperationSettings;
 use Webkul\Product\Enums\ProductType;
+use Webkul\Security\Traits\HasResourcePermissionQuery;
 use Webkul\Support\Filament\Forms\Components\Repeater;
 use Webkul\Support\Filament\Forms\Components\Repeater\TableColumn as RepeaterTableColumn;
 use Webkul\Support\Filament\Infolists\Components\RepeatableEntry;
@@ -70,6 +71,8 @@ use Webkul\Support\Models\UOM;
 
 class ManufacturingOrderResource extends Resource
 {
+    use HasResourcePermissionQuery;
+    
     protected static ?string $model = Order::class;
 
     protected static ?string $cluster = Operations::class;
@@ -975,7 +978,7 @@ class ManufacturingOrderResource extends Resource
                     },
                 )
                 ->default(fn (Get $get): ?int => Product::query()->withTrashed()->find($get('product_id'))?->uom_id)
-                ->placeholder('UoM')
+                ->placeholder(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.sections.general.fields.uom-placeholder'))
                 ->columnSpan(1),
         ])
             ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.sections.general.fields.quantity'))
@@ -1165,7 +1168,7 @@ class ManufacturingOrderResource extends Resource
             ->compact()
             ->extraItemActions([
                 Action::make('openWorkOrder')
-                    ->tooltip('Open work order')
+                    ->tooltip(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.work-orders.actions.open-work-order.tooltip'))
                     ->icon('heroicon-m-arrow-top-right-on-square')
                     ->url(fn (array $arguments, Get $get): ?string => filled($get("workOrders.{$arguments['item']}.id"))
                         ? WorkOrderResource::getUrl('view', [
@@ -1376,7 +1379,7 @@ class ManufacturingOrderResource extends Resource
                             }),
                         Action::make('button_done')
                             ->icon('heroicon-m-check-circle')
-                            ->label('Done')
+                            ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.work-orders.actions.done.label'))
                             ->color('primary')
                             ->size(Size::ExtraLarge)
                             ->databaseTransaction()
@@ -1561,11 +1564,11 @@ class ManufacturingOrderResource extends Resource
 
     public static function getWarehouseSettings(): WarehouseSettings
     {
-        return once(fn () => app(WarehouseSettings::class));
+        return settings(WarehouseSettings::class);
     }
 
     public static function getOperationSettings(): OperationSettings
     {
-        return once(fn () => app(OperationSettings::class));
+        return settings(OperationSettings::class);
     }
 }

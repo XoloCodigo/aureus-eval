@@ -9,6 +9,7 @@ return [
         'invoice'       => 'Facturas',
         'accounting'    => 'Contabilidad',
         'inventory'     => 'Inventario',
+        'maintenance'   => 'Mantenimiento',
         'manufacturing' => 'Fabricación',
         'project'       => 'Proyectos',
         'employee'      => 'Empleados',
@@ -17,5 +18,7 @@ return [
         'website'       => 'Sitio web',
         'plugin'        => 'Complementos',
         'setting'       => 'Configuración',
+        'help'          => 'Ayuda',
+        'barcode'       => 'Código de barras',
     ],
 ];

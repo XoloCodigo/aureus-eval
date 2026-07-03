@@ -266,13 +266,10 @@ JS,
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->badge()
                     ->label(__('filament-shield::filament-shield.column.name'))
                     ->formatStateUsing(fn ($state): string => Str::headline($state))
-                    ->colors(['primary'])
                     ->searchable(),
                 TextColumn::make('guard_name')
-                    ->badge()
                     ->label(__('filament-shield::filament-shield.column.guard_name')),
                 TextColumn::make('permissions_count')
                     ->badge()
@@ -577,6 +574,7 @@ JS,
             ->hiddenLabel()
             ->options(fn (): array => $options)
             ->searchable($searchable)
+            ->bulkToggleable()
             ->afterStateHydrated(function (Component $component, string $operation, ?Model $record) use ($options): void {
                 static::setPermissionStateForRecordPermissions(
                     component: $component,

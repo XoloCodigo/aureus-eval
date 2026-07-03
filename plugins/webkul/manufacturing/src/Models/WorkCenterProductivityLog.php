@@ -81,7 +81,7 @@ class WorkCenterProductivityLog extends Model
 
             $productivityLog->company_id ??= $user?->default_company_id;
 
-            $productivityLog->description ??= "Time Tracking: {$user->name}";
+            $productivityLog->description ??= __('manufacturing::system.work-center-productivity-log.time-tracking', ['name' => $user->name]);
 
             $productivityLog->loss_type ??= $productivityLog->loss->loss_type ?? 'other';
 
@@ -173,7 +173,7 @@ class WorkCenterProductivityLog extends Model
             $underperformanceType = WorkCenterProductivityLoss::where('loss_type', 'performance')->first();
 
             if (! $underperformanceType) {
-                throw new \Exception(__("You need to define at least one un archive productivity loss in the category 'Performance'. Create from configuration settings."));
+                throw new \Exception(__('manufacturing::system.work-center-productivity-log.no-performance-productivity-loss'));
             }
 
             $underPerformanceProductivityLogs->each->update(['loss_id' => $underperformanceType->id]);

@@ -630,7 +630,7 @@ class CompanyResource extends Resource
     {
         $ids = (array) $ids;
 
-        if (! in_array(app(UserSettings::class)->default_company_id, $ids)) {
+        if (! in_array(settings(UserSettings::class)->default_company_id, $ids)) {
             return;
         }
 

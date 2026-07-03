@@ -8,7 +8,7 @@ class Configurations extends Cluster
 {
     protected static ?string $slug = 'inventory/configurations';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public static function getNavigationLabel(): string
     {

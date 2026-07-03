@@ -294,7 +294,7 @@ class TaskResource extends Resource
                     ->tooltip(fn (TaskState $state): string => $state->getLabel())
                     ->action(
                         Action::make('updateState')
-                            ->modalHeading('Update Task State')
+                            ->modalHeading(__('projects::filament/resources/task.table.actions.update-state.modal-heading'))
                             ->schema(fn (Task $record): array => [
                                 ToggleButtons::make('state')
                                     ->label(__('projects::filament/resources/task.table.columns.new-state'))
@@ -856,12 +856,12 @@ class TaskResource extends Resource
 
     private static function getTimeSettings(): TimeSettings
     {
-        return once(fn () => app(TimeSettings::class));
+        return settings(TimeSettings::class);
     }
 
     private static function getTaskSettings(): TaskSettings
     {
-        return once(fn () => app(TaskSettings::class));
+        return settings(TaskSettings::class);
     }
 
     public static function getRecordSubNavigation(Page $page): array

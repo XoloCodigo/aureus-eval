@@ -25,6 +25,7 @@ use Webkul\Product\Models\Product;
 use Webkul\Sale\Database\Factories\OrderLineFactory;
 use Webkul\Sale\Enums\OrderState;
 use Webkul\Sale\Enums\QtyDeliveredMethod;
+use Webkul\Sale\Facades\SaleOrder as SaleOrderFacade;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Currency;
@@ -192,6 +193,24 @@ class OrderLine extends Model implements Sortable
         static::saving(function ($orderLine) {
             $orderLine->computeWarehouseId();
         });
+
+        static::created(function ($orderLine) {
+            if ($orderLine->order->state === OrderState::SALE) {
+                SaleOrderFacade::applyInventoryRules(collect([$orderLine]));
+            }
+        });
+
+        static::updated(function ($orderLine) {
+            if (
+                $orderLine->wasChanged('product_uom_qty')
+                && $orderLine->state === OrderState::SALE
+                && ! $orderLine->is_expense
+            ) {
+                $previousProductUomQty = [$orderLine->id => $orderLine->getOriginal('product_uom_qty')];
+
+                SaleOrderFacade::applyInventoryRules(collect([$orderLine]), previousProductUOMQty: $previousProductUomQty);
+            }
+        });
     }
 
     public function computeWarehouseId()
@@ -216,7 +235,7 @@ class OrderLine extends Model implements Sortable
             ->orderBy('route_sort')
             ->orderBy('sort')
             ->get()
-            ->sortBy(fn ($rule) => (! $rule->location_src_id || $rule->sourceLocation->warehouse_id === $this->order->warehouse_id) ? 0 : 1);
+            ->sortBy(fn ($rule) => (! $rule->source_location_id || $rule->sourceLocation->warehouse_id === $this->order->warehouse_id) ? 0 : 1);
 
         if ($rules->isNotEmpty()) {
             $this->warehouse_id = $rules->first()->sourceLocation->warehouse_id;

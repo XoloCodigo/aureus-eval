@@ -12,6 +12,8 @@ use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
+use Webkul\Product\Models\Product;
+use Webkul\Product\Models\ProductSupplier;
 use Webkul\Purchase\Facades\PurchaseOrder as PurchaseOrderFacade;
 use Webkul\Purchase\Listeners\ComputePurchaseOrderListener;
 use Webkul\Purchase\Livewire\Customer\ListProducts;
@@ -77,6 +79,19 @@ class PurchaseServiceProvider extends PackageServiceProvider
         Event::listen([OperationDone::class, OperationBackOrdered::class], ComputePurchaseOrderListener::class);
 
         // \Webkul\Account\Models\Move::observe(\Webkul\Purchase\Observers\AccountMoveObserver::class);
+
+        $this->contributeProductSchema();
+    }
+
+    protected function contributeProductSchema(): void
+    {
+        if (! Package::isPluginInstalled(static::$name)) {
+            return;
+        }
+
+        Product::resolveRelationUsing('sellers', fn (Product $product) => $product->is_configurable
+            ? $product->hasMany(ProductSupplier::class)->orWhereIn('product_id', $product->variants()->pluck('id'))
+            : $product->hasMany(ProductSupplier::class));
     }
 
     public function packageRegistered(): void

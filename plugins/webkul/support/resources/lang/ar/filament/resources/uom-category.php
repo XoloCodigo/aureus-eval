@@ -37,7 +37,7 @@ return [
     'table' => [
         'columns' => [
             'name'       => 'الاسم',
-            'uoms-count' => 'الوحدات',
+            'uoms'       => 'الوحدات',
             'created-at' => 'تاريخ الإنشاء',
             'updated-at' => 'تاريخ التحديث',
         ],
