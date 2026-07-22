@@ -50,6 +50,7 @@ use Webkul\Security\Models\User;
 use Webkul\Security\Settings\UserSettings;
 use Webkul\Security\Traits\HasResourcePermissionQuery;
 use Webkul\Support\Models\Company;
+use Webkul\Support\Enums\NavigationGroup;
 
 class UserResource extends Resource
 {
@@ -66,9 +67,9 @@ class UserResource extends Resource
         return __('security::filament/resources/user.navigation.title');
     }
 
-    public static function getNavigationGroup(): string
+    public static function getNavigationGroup(): string | \UnitEnum
     {
-        return __('security::filament/resources/user.navigation.group');
+        return NavigationGroup::Setting;
     }
 
     public static function getGloballySearchableAttributes(): array

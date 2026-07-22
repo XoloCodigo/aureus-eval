@@ -75,6 +75,7 @@ use Webkul\Project\Settings\TimeSettings;
 use Webkul\Security\Filament\Resources\UserResource;
 use Webkul\Security\Traits\HasResourcePermissionQuery;
 use Webkul\Support\Filament\Tables\Columns\ProgressBarEntry;
+use Webkul\Support\Enums\NavigationGroup;
 
 class TaskResource extends Resource
 {
@@ -93,9 +94,9 @@ class TaskResource extends Resource
         return __('projects::filament/resources/task.navigation.title');
     }
 
-    public static function getNavigationGroup(): string
+    public static function getNavigationGroup(): string | \UnitEnum
     {
-        return __('projects::filament/resources/task.navigation.group');
+        return NavigationGroup::Project;
     }
 
     public static function getGloballySearchableAttributes(): array
