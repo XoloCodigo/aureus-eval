@@ -10,7 +10,7 @@ use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationGroup as FilamentNavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -23,7 +23,8 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Webkul\Manufacturing\ManufacturingPlugin;
+use LaraZeus\SpatieTranslatable\SpatieTranslatablePlugin;
+use Webkul\Support\Enums\NavigationGroup;
 use Webkul\Support\Filament\Pages\Profile;
 use Webkul\Support\GlobalSearchProvider;
 
@@ -57,68 +58,24 @@ class AdminPanelProvider extends PanelProvider
                     ->label(fn () => Auth::user()?->name)
                     ->url(fn (): string => Profile::getUrl()),
             ])
-            ->navigationGroups([
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.dashboard'))
-                    ->icon('icon-dashboard'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.contact'))
-                    ->icon('petfood-crm'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.sale'))
-                    ->icon('petfood-ventas'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.purchase'))
-                    ->icon('petfood-compras'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.maintenance'))
-                    ->icon('icon-maintenance'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.manufacturing'))
-                    ->icon('petfood-fabricacion'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.inventory'))
-                    ->icon('petfood-inventario'),
-                NavigationGroup::make()
-                    ->label('Calidad e Inocuidad')
-                    ->icon('petfood-calidad'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.invoice'))
-                    ->icon('petfood-facturas'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.accounting'))
-                    ->icon('icon-accounting'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.project'))
-                    ->icon('icon-projects'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.employee'))
-                    ->icon('petfood-empleados'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.time-off'))
-                    ->icon('petfood-ausencias'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.recruitment'))
-                    ->icon('petfood-rh'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.website'))
-                    ->icon('icon-website'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.barcode'))
-                    ->icon('icon-barcode'),
-                NavigationGroup::make()
-                    ->label(__('admin.navigation.plugin'))
-                    ->label(fn (): string => __('admin.navigation.plugin'))
-                    ->icon('petfood-complementos'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.setting'))
-                    ->icon('petfood-configuracion'),
-                NavigationGroup::make()
-                    ->label(fn (): string => __('admin.navigation.help'))
-                    ->icon('icon-help'),
-            ])
+            ->navigationGroups(
+                collect(NavigationGroup::cases())->mapWithKeys(
+                    fn (NavigationGroup $case) => [
+                        $case->name => FilamentNavigationGroup::make()
+                            ->label(fn () => $case->getLabel())
+                            ->icon(fn () => $case->getIcon()),
+                        // Ours has no upstream enum case. Keyed by the label the
+                        // petfood pages declare as their $navigationGroup, and
+                        // placed right after Inventario in the sidebar.
+                        ...($case === NavigationGroup::Inventory ? [
+                            'Calidad e Inocuidad' => FilamentNavigationGroup::make()
+                                ->label('Calidad e Inocuidad')
+                                ->icon('petfood-calidad'),
+                        ] : []),
+                    ]
+                )->all()
+            )
             ->plugins([
-                ManufacturingPlugin::make(),
                 FilamentShieldPlugin::make()
                     ->gridColumns([
                         'default' => 1,
@@ -137,6 +94,8 @@ class AdminPanelProvider extends PanelProvider
                         'default' => 1,
                         'sm'      => 2,
                     ]),
+                SpatieTranslatablePlugin::make()
+                    ->defaultLocales(array_keys(config('app.supported_locales'))),
             ])
             ->globalSearch(provider: GlobalSearchProvider::class)
             ->middleware([

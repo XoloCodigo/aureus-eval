@@ -112,7 +112,7 @@ class OperationController extends Controller
     protected function checkAvailabilityById(string $id): Operation
     {
         $operation = $this->findOperationById($id);
-        $operation = Inventory::assignTransfer($operation);
+        $operation = Inventory::reserveTransfer($operation);
 
         return $operation->refresh()->load($this->allowedIncludes);
     }
@@ -128,7 +128,7 @@ class OperationController extends Controller
     protected function validateById(string $id): Operation
     {
         $operation = $this->findOperationById($id);
-        $operation = Inventory::doneTransfer($operation);
+        $operation = Inventory::completeTransfer($operation);
 
         return $operation->refresh()->load($this->allowedIncludes);
     }
@@ -144,19 +144,19 @@ class OperationController extends Controller
     protected function returnById(string $id): Operation
     {
         $operation = $this->findOperationById($id);
-        $newOperation = Inventory::returnTransfer($operation);
+        $newOperation = Inventory::createReturn($operation);
 
         return $newOperation->refresh()->load($this->allowedIncludes);
     }
 
     protected function ensureCanCheckAvailability(Operation $operation): ?JsonResponse
     {
-        if (! in_array($operation->state, [OperationState::CONFIRMED, OperationState::ASSIGNED], true)) {
-            return $this->actionValidationError('Only confirmed or assigned operations can check availability.');
+        if (! in_array($operation->state, [OperationState::WAITING, OperationState::CONFIRMED, OperationState::ASSIGNED], true)) {
+            return $this->actionValidationError('Only waiting, confirmed or assigned operations can check availability.');
         }
 
         $hasEligibleMoves = $operation->moves()
-            ->whereIn('state', [MoveState::CONFIRMED, MoveState::PARTIALLY_ASSIGNED])
+            ->whereIn('state', [MoveState::WAITING, MoveState::CONFIRMED, MoveState::PARTIALLY_ASSIGNED])
             ->exists();
 
         if (! $hasEligibleMoves) {
@@ -338,7 +338,7 @@ class OperationController extends Controller
                 }
             }
 
-            Move::$globalContext['skip_additional'] = false;
+            Move::markNextAsAdditional();
 
             $createdMove = $operation->moves()->create($this->prepareMoveData($operation, $moveData));
             $retainedMoveIds[] = $createdMove->id;

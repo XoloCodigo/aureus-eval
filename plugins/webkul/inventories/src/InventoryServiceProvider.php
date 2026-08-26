@@ -3,27 +3,41 @@
 namespace Webkul\Inventory;
 
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
+use Webkul\Chatter\Services\ChatterCleanupService;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource\Actions\UpdateQuantityAction;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource\Schemas\InventoryProductSchema;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource\Support\QuantityResolver;
 use Webkul\Inventory\Filament\Widgets\OperationTypeCardWidget;
+use Webkul\Inventory\Models\Lot;
 use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Models\MoveLine;
+use Webkul\Inventory\Models\Operation;
+use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Models\Route;
+use Webkul\Inventory\Models\Scrap;
+use Webkul\Inventory\Observers\CompanyObserver;
+use Webkul\Inventory\Observers\ProductObserver;
+use Webkul\Inventory\Observers\UOMObserver;
 use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
 use Webkul\Product\Filament\Resources\ProductResource\Support\ProductSchemaRegistry;
 use Webkul\Product\Models\Product;
+use Webkul\Product\Support\ProductUsageRegistry;
 use Webkul\Security\Models\User;
+use Webkul\Support\Models\Company;
+use Webkul\Support\Models\UOM;
+use Webkul\Support\Services\SequenceService;
+use Webkul\TableViews\Filament\Components\PresetView;
 
 class InventoryServiceProvider extends PackageServiceProvider
 {
@@ -93,6 +107,8 @@ class InventoryServiceProvider extends PackageServiceProvider
                 '2026_05_14_092628_inventories_create_putaway_rules_table',
                 '2026_05_15_103923_create_inventories_putaway_rule_package_types_table',
                 '2026_06_22_104603_add_additional_column_in_inventories_moves_table',
+                '2026_07_21_130000_provision_company_virtual_locations',
+                '2026_08_03_130000_seed_inventories_sequences',
             ])
             ->runsMigrations()
             ->hasSettings([
@@ -135,20 +151,58 @@ class InventoryServiceProvider extends PackageServiceProvider
                         DB::table($table)->delete();
                     }
                 });
+
+                $command->endWith(function () {
+                    ChatterCleanupService::purgeForModels([Operation::class, Scrap::class]);
+
+                    SequenceService::purge(['inventories.scrap'], [OperationType::class]);
+                });
             })
             ->icon('inventories');
     }
 
     public function packageBooted(): void
     {
+        $this->registerObservers();
+
         $this->contributeProductSchema();
 
+        $this->contributeProductUsage();
+
         $this->registerLivewireComponents();
+    }
+
+    protected function contributeProductUsage(): void
+    {
+        if (! Package::isPluginInstalled(static::$name)) {
+            return;
+        }
+
+        ProductUsageRegistry::register(
+            Move::class,
+            MoveLine::class,
+            ProductQuantity::class,
+            Lot::class,
+            Scrap::class,
+        );
     }
 
     public function registerLivewireComponents(): void
     {
         Livewire::component('inventories-operation-type-card', OperationTypeCardWidget::class);
+    }
+
+    protected function registerObservers(): void
+    {
+        if (! Package::isPluginInstalled(static::$name)) {
+            return;
+        }
+
+        Company::observe(CompanyObserver::class);
+
+        UOM::observe(UOMObserver::class);
+
+        Product::observe(ProductObserver::class);
     }
 
     protected function contributeProductSchema(): void
@@ -166,6 +220,14 @@ class InventoryServiceProvider extends PackageServiceProvider
         ProductSchemaRegistry::table('columns', fn () => InventoryProductSchema::forecastedColumn());
 
         ProductSchemaRegistry::actions('header', fn () => UpdateQuantityAction::make());
+
+        ProductSchemaRegistry::presetView(
+            'storable_products',
+            fn () => PresetView::make(__('inventories::filament/clusters/products/resources/product/pages/list-products.tabs.inventory-management'))
+                ->icon('heroicon-s-clipboard-document-list')
+                ->favorite()
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('is_storable', true)),
+        );
 
         ProductSchemaRegistry::eagerLoad(['routes', 'responsible']);
 

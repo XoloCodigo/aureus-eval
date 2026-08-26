@@ -112,7 +112,9 @@ trait HasChatter
         $relation = $this->chatterResponsibleRelation($name);
 
         if ($relation instanceof BelongsToMany || $relation instanceof HasMany) {
-            return $relation->pluck($relation->getRelated()->getKeyName())->all();
+            $related = $relation->getRelated();
+
+            return $relation->pluck($related->getTable().'.'.$related->getKeyName())->all();
         }
 
         if ($relation instanceof BelongsTo) {
@@ -362,10 +364,10 @@ trait HasChatter
             $searchTerm = '%'.$filters['search'].'%';
 
             $query->where(function ($query) use ($searchTerm) {
-                $query->where('subject', 'like', $searchTerm)
-                    ->orWhere('body', 'like', $searchTerm)
-                    ->orWhere('summary', 'like', $searchTerm)
-                    ->orWhere('name', 'like', $searchTerm);
+                $query->whereLike('subject', $searchTerm)
+                    ->orWhereLike('body', $searchTerm)
+                    ->orWhereLike('summary', $searchTerm)
+                    ->orWhereLike('name', $searchTerm);
             });
         }
 
@@ -422,7 +424,7 @@ trait HasChatter
             'date_deadline' => $data['date_deadline'] ?? now(),
             'causer_type'   => $user?->getMorphClass(),
             'causer_id'     => $user?->id,
-            'company_id'    => $data['company_id'] ?? ($user?->defaultCompany?->id ?? null),
+            'company_id'    => $data['company_id'] ?? (current_company()?->id ?? null),
         ], $data));
 
         $this->messages()->save($message);

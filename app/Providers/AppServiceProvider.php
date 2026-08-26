@@ -7,7 +7,12 @@ use Filament\Forms\Components\DateTimePicker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Component;
+use Livewire\Livewire;
 use Webkul\Security\Models\User;
+
+use function Livewire\on;
+use function Livewire\store;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,5 +35,23 @@ class AppServiceProvider extends ServiceProvider
         DateTimePicker::configureUsing(
             fn (DateTimePicker $component) => $component->displayFormat('d/m/Y H:i')
         );
+
+        on('dehydrate', function (Component $component): void {
+            if (! Livewire::isLivewireRequest()) {
+                return;
+            }
+
+            if (! store($component)->has('redirect')) {
+                return;
+            }
+
+            $notifications = session()->pull('filament.notifications');
+
+            if (empty($notifications)) {
+                return;
+            }
+
+            session()->put('filament.claimed_notifications', $notifications);
+        });
     }
 }
