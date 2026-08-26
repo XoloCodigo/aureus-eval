@@ -11,6 +11,7 @@ use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
+use XoloCodigo\PetFood\Console\Commands\MigrationDriftCommand;
 use XoloCodigo\PetFood\Recipes\Observers\BillOfMaterialLineObserver;
 use XoloCodigo\PetFood\Recipes\Services\BomVersionService;
 use XoloCodigo\PetFood\Traceability\Observers\ManufacturingOrderObserver;
@@ -36,6 +37,7 @@ class PetFoodServiceProvider extends PackageServiceProvider
                 '2026_06_27_120000_create_petfood_bom_versions_table',
             ])
             ->hasSeeder('XoloCodigo\\PetFood\\Database\\Seeders\\DatabaseSeeder')
+            ->hasCommand(MigrationDriftCommand::class)
             ->runsMigrations()
             ->hasInstallCommand(function (InstallCommand $command) {
                 $command
