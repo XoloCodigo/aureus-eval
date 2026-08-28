@@ -37,6 +37,7 @@ class PetFoodServiceProvider extends PackageServiceProvider
                 '2026_06_24_120000_add_petfood_supplier_origin_to_inventories_lots',
                 '2026_06_25_120000_add_petfood_quality_role_to_inventories_locations',
                 '2026_06_27_120000_create_petfood_bom_versions_table',
+                '2026_08_28_120000_repair_upstream_schema_drift',
             ])
             ->hasSeeder('XoloCodigo\\PetFood\\Database\\Seeders\\DatabaseSeeder')
             ->hasCommand(MigrationDriftCommand::class)
