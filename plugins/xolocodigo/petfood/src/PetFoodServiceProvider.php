@@ -11,7 +11,9 @@ use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
+use Webkul\Support\Database\Dialects\DatabaseDialect;
 use XoloCodigo\PetFood\Console\Commands\MigrationDriftCommand;
+use XoloCodigo\PetFood\Database\Dialects\SqliteDialect;
 use XoloCodigo\PetFood\Recipes\Observers\BillOfMaterialLineObserver;
 use XoloCodigo\PetFood\Recipes\Services\BomVersionService;
 use XoloCodigo\PetFood\Traceability\Observers\ManufacturingOrderObserver;
@@ -52,6 +54,16 @@ class PetFoodServiceProvider extends PackageServiceProvider
     {
         // Singleton so a single edit's line-change events collapse into one version.
         $this->app->singleton(BomVersionService::class);
+
+        // Upstream ships a DatabaseDialect for MySQL and Postgres only (their CI
+        // matrix dropped SQLite in the 2026-08 sync) and refuses to resolve for
+        // any other driver, which takes the whole suite down on our SQLite test
+        // database. Rebind instead of editing the core; read the driver from
+        // config so this costs no connection, and leave webkul's binding alone
+        // on the server, which runs MySQL.
+        if (config('database.connections.'.config('database.default').'.driver') === 'sqlite') {
+            $this->app->singleton(DatabaseDialect::class, fn (): SqliteDialect => new SqliteDialect);
+        }
 
         Panel::configureUsing(function (Panel $panel): void {
             $panel->plugin(PetFoodPlugin::make());

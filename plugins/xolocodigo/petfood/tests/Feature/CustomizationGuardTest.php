@@ -3,6 +3,7 @@
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Webkul\Support\Enums\NavigationGroup;
 use XoloCodigo\PetFood\Quality\Filament\Pages\QualityLocations;
 use XoloCodigo\PetFood\Recipes\Filament\Pages\BomVersions;
 use XoloCodigo\PetFood\Traceability\Filament\Pages\LotTraceability;
@@ -28,9 +29,12 @@ it('keeps our nav-group order with Calidad e Inocuidad right after Inventario', 
         ->map(fn ($group) => $group->getIcon())
         ->values();
 
-    $inventory = $icons->search('petfood-inventario');
+    // Module icons come from the upstream enum since the 2026-08 sync (we adopted
+    // its generated groups); only our own group still names its icon directly.
+    // Asking the enum keeps this following upstream if it renames them again.
+    $inventory = $icons->search(NavigationGroup::Inventory->getIcon());
     $quality = $icons->search('petfood-calidad');
-    $invoice = $icons->search('petfood-facturas');
+    $invoice = $icons->search(NavigationGroup::Invoice->getIcon());
 
     expect($quality)->toBe($inventory + 1)     // Calidad immediately after Inventario
         ->and($quality)->toBeLessThan($invoice); // and before Facturas
@@ -47,4 +51,16 @@ it('keeps the Mexican Spanish term overrides (Celular, not the peninsular Móvil
     $terms = require base_path('plugins/webkul/partners/resources/lang/es/filament/resources/address.php');
 
     expect($terms['form']['mobile'])->toBe('Celular');
+});
+
+it('keeps RFC as the tax-id label on the company form', function () {
+    // This one is not hypothetical: the 2026-08 sync moved the whole Company
+    // resource from the security plugin to support and deleted the old lang
+    // file, taking our RFC override with it. Nothing failed — it was caught by
+    // hand while resolving the conflict. Resolve the label through the real
+    // translator so a future move breaks this instead of the UI.
+    app()->setLocale('es');
+
+    expect(__('support::filament/resources/company.form.sections.company-information.fields.tax-id'))
+        ->toBe('RFC');
 });
