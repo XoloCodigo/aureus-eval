@@ -21,7 +21,7 @@ class MxnCurrencySeeder extends Seeder
     public function run(): void
     {
         $affected = DB::table('currencies')
-            ->where('code', 'MXN')
+            ->where('name', 'MXN')
             ->update(['active' => true, 'updated_at' => now()]);
 
         if ($affected === 0) {
