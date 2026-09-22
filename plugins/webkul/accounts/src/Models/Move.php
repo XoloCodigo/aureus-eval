@@ -296,16 +296,31 @@ class Move extends Model implements Sortable
         return $this->belongsTo(PaymentMethodLine::class, 'preferred_payment_method_line_id');
     }
 
-    public function getTotalDiscountAttribute()
+    public function getTotalDiscountAttribute(): float
     {
-        return $this->lines()
-            ->where('display_type', 'product')
-            ->sum('discount');
+        $total = $this->lines()
+            ->where('display_type', DisplayType::PRODUCT)
+            ->sum(DB::raw('price_unit * quantity * discount / 100'));
+
+        return round((float) $total, $this->currency?->decimal_places ?? 2);
     }
 
     public function isInbound($includeReceipts = true)
     {
         return in_array($this->move_type, $this->getInboundTypes($includeReceipts));
+    }
+
+    public static function resolveBankPartnerId($moveType, ?int $companyId, ?int $partnerId): ?int
+    {
+        if (is_string($moveType)) {
+            $moveType = MoveType::tryFrom($moveType);
+        }
+
+        if (! in_array($moveType, (new static)->getInboundTypes(true))) {
+            return $partnerId;
+        }
+
+        return Company::find($companyId ?? current_company_id())?->partner_id;
     }
 
     public function getInboundTypes($includeReceipts = true): array

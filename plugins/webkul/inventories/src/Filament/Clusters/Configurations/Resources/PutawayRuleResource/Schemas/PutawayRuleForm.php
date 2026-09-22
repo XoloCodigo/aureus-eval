@@ -37,7 +37,8 @@ class PutawayRuleForm
                     ->relationship(
                         'inLocation',
                         'full_name',
-                        modifyQueryUsing: fn (Builder $query, Get $get) => $query->withTrashed()
+                        modifyQueryUsing: fn (Builder $query, Get $get, $state) => $query->withTrashed()
+                            ->where(hide_deleted_unless_selected($state))
                             ->where(owned_by_company($get('company_id')))
                             ->whereHas('children')
                             ->orderBy('full_name')
@@ -88,8 +89,9 @@ class PutawayRuleForm
                     ->relationship(
                         'product',
                         'name',
-                        modifyQueryUsing: fn (Builder $query, Get $get) => $query
+                        modifyQueryUsing: fn (Builder $query, Get $get, $state) => $query
                             ->withTrashed()
+                            ->where(hide_deleted_unless_selected($state))
                             ->where(owned_by_company($get('company_id')))
                     )
                     ->getOptionLabelFromRecordUsing(function ($record): string {

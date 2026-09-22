@@ -2,10 +2,14 @@
 
 use ArPHP\I18N\Arabic;
 use Filament\Forms\Components\Field;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Number;
+use Webkul\Security\Settings\CurrencySettings;
 use Webkul\Support\Database\Dialects\DatabaseDialect;
 use Webkul\Support\Models\Company;
+use Webkul\Support\Models\Currency;
 use Webkul\Support\Services\CompanyContext;
 use Webkul\Support\SettingsRegistry;
 use Webkul\Support\SupportServiceProvider;
@@ -14,6 +18,44 @@ if (! function_exists('settings')) {
     function settings(string $settings): object
     {
         return app(SettingsRegistry::class)->get($settings);
+    }
+}
+
+if (! function_exists('default_currency_code')) {
+    /**
+     * The ISO code money amounts are displayed in when no currency is given.
+     */
+    function default_currency_code(): string
+    {
+        return once(function (): string {
+            try {
+                $currencyId = settings(CurrencySettings::class)->default_currency_id;
+
+                $code = $currencyId ? Currency::find($currencyId)?->code : null;
+            } catch (Throwable) {
+                $code = null;
+            }
+
+            return $code ?: config('app.currency') ?: 'USD';
+        });
+    }
+}
+
+if (! function_exists('default_currency_id')) {
+    /**
+     * The id of the currency amounts are stored in when no currency is given.
+     */
+    function default_currency_id(): ?int
+    {
+        return once(function (): ?int {
+            try {
+                $currencyId = settings(CurrencySettings::class)->default_currency_id;
+            } catch (Throwable) {
+                $currencyId = null;
+            }
+
+            return $currencyId ?: Currency::findByCode(default_currency_code())?->id;
+        });
     }
 }
 
@@ -29,7 +71,7 @@ if (! function_exists('money')) {
     {
         $amount = $amount instanceof Closure ? $amount() : $amount;
 
-        $currency = $currency instanceof Closure ? $currency() : ($currency ?? config('app.currency'));
+        $currency = $currency instanceof Closure ? $currency() : ($currency ?? default_currency_code());
 
         $locale = $locale instanceof Closure ? $locale() : ($locale ?? config('app.locale'));
 
@@ -330,6 +372,29 @@ if (! function_exists('owned_by_company')) {
             $column = $model->getTable().'.company_id';
 
             return $query->whereNull($column)->orWhere($column, $companyId);
+        };
+    }
+}
+
+if (! function_exists('hide_deleted_unless_selected')) {
+    function hide_deleted_unless_selected($state = null): Closure
+    {
+        return function ($query) use ($state) {
+            $model = $query->getModel();
+
+            if (! in_array(SoftDeletes::class, class_uses_recursive($model), true)) {
+                return $query;
+            }
+
+            $query->whereNull($model->getQualifiedDeletedAtColumn());
+
+            $selected = array_values(array_filter(Arr::wrap($state), fn ($value): bool => filled($value)));
+
+            if ($selected !== []) {
+                $query->orWhereIn($model->getQualifiedKeyName(), $selected);
+            }
+
+            return $query;
         };
     }
 }

@@ -38,6 +38,7 @@ use Webkul\Account\Models\Bill;
 use Webkul\Account\Models\CashRounding;
 use Webkul\Account\Models\FiscalPosition;
 use Webkul\Account\Models\Journal;
+use Webkul\Account\Models\Move;
 use Webkul\Account\Models\MoveLine;
 use Webkul\Account\Models\Partner;
 use Webkul\Account\Models\Product;
@@ -57,6 +58,7 @@ class BillForm
     {
         return $schema
             ->components([
+                Hidden::make('move_type'),
                 FormProgressStepper::make('state')
                     ->hiddenLabel()
                     ->inline()
@@ -96,7 +98,8 @@ class BillForm
                                             ->relationship(
                                                 'partner',
                                                 'name',
-                                                fn (Builder $query) => $query->orderBy('id')->withTrashed(),
+                                                fn (Builder $query, $state) => $query->orderBy('id')->withTrashed()
+                                                    ->where(hide_deleted_unless_selected($state)),
                                             )
                                             ->required()
                                             ->searchable()
@@ -136,7 +139,14 @@ class BillForm
                                             ->relationship(
                                                 'partnerBank',
                                                 'account_number',
-                                                modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('partner_id', $get('partner_id'))->withTrashed(),
+                                                modifyQueryUsing: fn (Builder $query, Get $get, $state) => $query
+                                                    ->withTrashed()
+                                                    ->where(hide_deleted_unless_selected($state))
+                                                    ->where('partner_id', Move::resolveBankPartnerId(
+                                                        $get('move_type'),
+                                                        $get('company_id'),
+                                                        $get('partner_id'),
+                                                    )),
                                             )
                                             ->getOptionLabelFromRecordUsing(function ($record): string {
                                                 return $record->account_number.' - '.$record->bank->name.($record->trashed() ? ' (Deleted)' : '');
@@ -409,8 +419,9 @@ class BillForm
                     ->relationship(
                         name: 'product',
                         titleAttribute: 'name',
-                        modifyQueryUsing: fn (Builder $query, Get $get) => $query
+                        modifyQueryUsing: fn (Builder $query, Get $get, $state) => $query
                             ->withTrashed()
+                            ->where(hide_deleted_unless_selected($state))
                             ->whereNull('is_configurable')
                             ->where(owned_by_company($get('../../company_id'))),
                     )

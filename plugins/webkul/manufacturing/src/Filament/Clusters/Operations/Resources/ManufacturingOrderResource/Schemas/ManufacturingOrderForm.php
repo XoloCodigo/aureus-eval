@@ -101,8 +101,9 @@ class ManufacturingOrderForm
                                     ->relationship(
                                         'product',
                                         'name',
-                                        fn (Builder $query, Get $get) => $query
+                                        fn (Builder $query, Get $get, $state) => $query
                                             ->withTrashed()
+                                            ->where(hide_deleted_unless_selected($state))
                                             ->where('type', ProductType::GOODS)
                                             ->whereNull('is_configurable')
                                             ->where(owned_by_company($get('company_id')))
@@ -185,7 +186,7 @@ class ManufacturingOrderForm
                                     ->relationship(
                                         'billOfMaterial',
                                         'code',
-                                        modifyQueryUsing: function (Get $get, Builder $query): void {
+                                        modifyQueryUsing: function (Get $get, Builder $query, $state): void {
                                             $product = Product::query()->withTrashed()->find($get('product_id'));
 
                                             if (! $product) {
@@ -197,6 +198,7 @@ class ManufacturingOrderForm
                                             $productIds = array_filter([$product->id, $product->parent_id]);
 
                                             $query->withTrashed()
+                                                ->where(hide_deleted_unless_selected($state))
                                                 ->whereIn('product_id', $productIds)
                                                 ->where(owned_by_company($get('company_id')));
                                         }
@@ -274,8 +276,9 @@ class ManufacturingOrderForm
                                             ->relationship(
                                                 'operationType',
                                                 'name',
-                                                fn (Builder $query, Get $get) => $query
+                                                fn (Builder $query, Get $get, $state) => $query
                                                     ->withTrashed()
+                                                    ->where(hide_deleted_unless_selected($state))
                                                     ->where('type', 'manufacture')
                                                     ->where(owned_by_company($get('company_id')))
                                             )
@@ -305,8 +308,9 @@ class ManufacturingOrderForm
                                             }),
                                         Select::make('source_location_id')
                                             ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.miscellaneous.fields.source'))
-                                            ->relationship('sourceLocation', 'full_name', fn (Builder $query, Get $get) => $query
+                                            ->relationship('sourceLocation', 'full_name', fn (Builder $query, Get $get, $state) => $query
                                                 ->withTrashed()
+                                                ->where(hide_deleted_unless_selected($state))
                                                 ->where(owned_by_company($get('company_id'))))
                                             ->searchable()
                                             ->preload()
@@ -327,8 +331,9 @@ class ManufacturingOrderForm
                                             }),
                                         Select::make('destination_location_id')
                                             ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.miscellaneous.fields.finished-products-location'))
-                                            ->relationship('destinationLocation', 'full_name', fn (Builder $query, Get $get) => $query
+                                            ->relationship('destinationLocation', 'full_name', fn (Builder $query, Get $get, $state) => $query
                                                 ->withTrashed()
+                                                ->where(hide_deleted_unless_selected($state))
                                                 ->where(owned_by_company($get('company_id'))))
                                             ->searchable()
                                             ->preload()
@@ -611,8 +616,9 @@ class ManufacturingOrderForm
                     ->relationship(
                         'product',
                         'name',
-                        fn (Builder $query, Get $get) => $query
+                        fn (Builder $query, Get $get, $state) => $query
                             ->withTrashed()
+                            ->where(hide_deleted_unless_selected($state))
                             ->where('type', ProductType::GOODS)
                             ->whereNull('is_configurable')
                             ->where(owned_by_company($get('../../company_id'))),
@@ -810,8 +816,9 @@ class ManufacturingOrderForm
                     ->relationship(
                         'workCenter',
                         'name',
-                        fn (Builder $query, Get $get) => $query
+                        fn (Builder $query, Get $get, $state) => $query
                             ->withTrashed()
+                            ->where(hide_deleted_unless_selected($state))
                             ->where(owned_by_company($get('../../company_id'))),
                     )
                     ->searchable()
