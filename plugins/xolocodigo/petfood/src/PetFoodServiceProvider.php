@@ -70,7 +70,8 @@ class PetFoodServiceProvider extends PackageServiceProvider
             $panel->plugin(PetFoodPlugin::make());
         });
 
-        // Monochrome (currentColor) module icons, resolved as `petfood-{name}`.
+        // Petfood-only icons (e.g. the Calidad e Inocuidad group), resolved as
+        // `petfood-{name}`; module groups use resources/svg via upstream's enum.
         $this->callAfterResolving(IconFactory::class, function (IconFactory $factory): void {
             $factory->add('petfood', [
                 'path'   => __DIR__.'/../resources/svg',

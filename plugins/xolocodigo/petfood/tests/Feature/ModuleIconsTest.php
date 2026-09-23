@@ -2,32 +2,25 @@
 
 use Webkul\Support\Enums\NavigationGroup;
 
-it('registers the petfood module icon set as brand-blue line glyphs', function () {
-    $icons = ['ausencias', 'calidad', 'complementos', 'compras', 'configuracion',
-        'crm', 'empleados', 'fabricacion', 'facturas', 'inventario',
-        'mantenimiento', 'rh', 'ventas'];
+/*
+ * Our framed line icons carry a brand accent (#F5821F) that upstream's generic
+ * art never uses, so its presence proves the nav renders OUR art.
+ */
 
-    foreach ($icons as $icon) {
-        expect(svg("petfood-{$icon}")->toHtml())
-            ->toContain('stroke="#2563eb"')
-            ->toContain('viewBox=');
-    }
+it('serves petfood art for the Calidad e Inocuidad group', function () {
+    expect(svg('petfood-calidad')->toHtml())->toContain('#F5821F');
 });
 
-it('serves petfood-branded art for the icons the navigation-group enum renders', function () {
+it('serves petfood-branded art for every icon the navigation-group enum renders', function () {
     // Upstream's NavigationGroup enum (HasIcon) drives the module nav-group icons:
     // getIcon() returns "icon-{name}" -> resources/svg/{name}.svg (default blade set),
-    // bypassing our AdminPanelProvider ->icon('petfood-*'). Our branding must live in
-    // resources/svg or the sync's generic art shows instead (regression 2026-07-22).
-    $brandedModules = [
-        NavigationGroup::Contact, NavigationGroup::Sale, NavigationGroup::Purchase,
-        NavigationGroup::Maintenance, NavigationGroup::Manufacturing, NavigationGroup::Inventory,
-        NavigationGroup::Invoice, NavigationGroup::Employee, NavigationGroup::TimeOff,
-        NavigationGroup::Recruitment, NavigationGroup::Plugin, NavigationGroup::Setting,
-    ];
+    // bypassing our AdminPanelProvider. Our branding must live in resources/svg or a
+    // sync's generic art shows instead (regression 2026-07-22).
+    $groupsWithUpstreamArt = collect(NavigationGroup::cases())
+        ->reject(fn (NavigationGroup $group): bool => str_contains(svg($group->getIcon())->toHtml(), '#F5821F'))
+        ->map(fn (NavigationGroup $group): string => $group->name)
+        ->values()
+        ->all();
 
-    foreach ($brandedModules as $group) {
-        expect(svg($group->getIcon())->toHtml())
-            ->toContain('stroke="#2563eb"');
-    }
+    expect($groupsWithUpstreamArt)->toBe([]);
 });
