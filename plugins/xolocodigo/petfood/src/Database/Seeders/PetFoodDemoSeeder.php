@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\MoveState;
+use Webkul\Inventory\Enums\OperationType as OperationTypeKind;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Lot;
 use Webkul\Inventory\Models\Move;
@@ -56,7 +57,11 @@ class PetFoodDemoSeeder extends Seeder
         $uom = UOM::query()->firstOrFail();
         $category = Category::query()->first();
         $warehouse = Warehouse::query()->firstOrFail();
-        $operationType = OperationType::query()->firstOrFail();
+        // The MO form only accepts "manufacture" operation types (first() was Receipts).
+        $operationType = OperationType::query()
+            ->where('type', OperationTypeKind::MANUFACTURE)
+            ->where('warehouse_id', $warehouse->id)
+            ->firstOrFail();
         $internal = Location::query()->where('type', LocationType::INTERNAL)->firstOrFail();
 
         $supplier = $this->partner('Granos del Norte (demo)', $company->id, $user);
