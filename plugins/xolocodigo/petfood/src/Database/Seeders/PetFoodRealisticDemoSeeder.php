@@ -4,6 +4,7 @@ namespace XoloCodigo\PetFood\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Webkul\Inventory\Enums\OperationType as OperationTypeKind;
 use Webkul\Inventory\Models\Lot;
 use Webkul\Inventory\Models\OperationType;
@@ -132,8 +133,8 @@ class PetFoodRealisticDemoSeeder extends Seeder
             'finished_good' => $this->category('Producto terminado', $root),
         ];
 
-        $suppliers = collect(self::SUPPLIERS)->map(fn (string $name): Partner => $this->partner($name));
-        collect(self::CUSTOMERS)->each(fn (string $name): Partner => $this->partner($name));
+        $suppliers = collect(self::SUPPLIERS)->map(fn (string $name): Partner => $this->partner($name, 'supplier_rank'));
+        collect(self::CUSTOMERS)->each(fn (string $name): Partner => $this->partner($name, 'customer_rank'));
 
         $products = [];
         $supplierLot = 300;
@@ -150,7 +151,7 @@ class PetFoodRealisticDemoSeeder extends Seeder
             }
         }
 
-        $products[self::PREMIX] = $this->product(self::PREMIX, 'wip', $uoms['kg'], $uoms['kg'], 28.00, 0, $categories);
+        $products[self::PREMIX] = $this->product(self::PREMIX, 'wip', $uoms['kg'], $uoms['kg'], 0, 0, $categories);
 
         foreach (self::FINISHED_GOODS as $name => [$uom, $price]) {
             $products[$name] = $this->product($name, 'finished_good', $uoms[$uom], $uoms[$uom], 0, $price, $categories);
@@ -171,15 +172,24 @@ class PetFoodRealisticDemoSeeder extends Seeder
         return Category::query()->create(['name' => $name, 'parent_id' => $parent?->id, 'creator_id' => $this->userId]);
     }
 
-    private function partner(string $name): Partner
+    /**
+     * The rank (vendor/customer list filters) is a column of the optional accounts plugin.
+     */
+    private function partner(string $name, string $rank): Partner
     {
-        return Partner::query()->firstOrCreate(['name' => $name], [
+        $partner = Partner::query()->firstOrCreate(['name' => $name], [
             'account_type' => 'company',
             'sub_type'     => 'partner',
             'company_id'   => $this->companyId,
             'creator_id'   => $this->userId,
             'user_id'      => $this->userId,
         ]);
+
+        if (Schema::hasColumn($partner->getTable(), $rank)) {
+            $partner->forceFill([$rank => 1])->save();
+        }
+
+        return $partner;
     }
 
     /**
@@ -267,5 +277,8 @@ class PetFoodRealisticDemoSeeder extends Seeder
                 'creator_id'          => $this->userId,
             ]);
         }
+
+        // Unit cost rolled up from the recipe (premix first, so the kibbles include it).
+        $product->update(['cost' => $bom->getComponentCost(1)]);
     }
 }

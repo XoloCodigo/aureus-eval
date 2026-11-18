@@ -1,9 +1,12 @@
 <?php
 
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Webkul\Inventory\Enums\OperationType;
 use Webkul\Inventory\Models\Lot;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Manufacturing\Models\BillOfMaterial;
+use Webkul\Partner\Models\Partner;
 use Webkul\Product\Models\Product;
 use XoloCodigo\PetFood\Database\Seeders\PetFoodRealisticDemoSeeder;
 use XoloCodigo\PetFood\Recipes\Services\BomVersionService;
@@ -65,6 +68,28 @@ it('keeps the quarantined corn lot out of available stock', function () {
         ->sort()->values()->all();
 
     expect($available)->toBe([0.0, 18000.0, 25000.0]);
+});
+
+it('ranks suppliers and customers so the vendor and customer lists show them', function () {
+    // supplier_rank/customer_rank come from the accounts plugin (installed on the server, not in this test DB).
+    if (! Schema::hasColumn('partners_partners', 'supplier_rank')) {
+        Schema::table('partners_partners', function (Blueprint $table) {
+            $table->integer('supplier_rank')->default(0);
+            $table->integer('customer_rank')->default(0);
+        });
+    }
+
+    (new PetFoodRealisticDemoSeeder)->run();
+
+    expect(Partner::query()->where('name', 'Proteínas del Bajío')->value('supplier_rank'))->toBe(1)
+        ->and(Partner::query()->where('name', 'Pet Shop La Huella')->value('customer_rank'))->toBe(1);
+});
+
+it('costs finished goods per bag from their recipe', function () {
+    (new PetFoodRealisticDemoSeeder)->run();
+
+    expect((float) Product::query()->where('name', 'Croqueta Perro Adulto Premium 20 kg')->value('cost'))->toBe(220.46)
+        ->and((float) Product::query()->where('name', 'Premezcla vitamínica-mineral')->value('cost'))->toBe(28.0);
 });
 
 it('is idempotent', function () {
