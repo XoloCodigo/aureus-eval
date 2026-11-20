@@ -4,7 +4,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Webkul\Support\Enums\NavigationGroup;
-use XoloCodigo\PetFood\Quality\Filament\Pages\QualityLocations;
+use XoloCodigo\PetFood\Quality\Filament\Pages\RetainedLots;
 use XoloCodigo\PetFood\Recipes\Filament\Pages\BomVersions;
 use XoloCodigo\PetFood\Traceability\Filament\Pages\LotTraceability;
 
@@ -17,7 +17,7 @@ use XoloCodigo\PetFood\Traceability\Filament\Pages\LotTraceability;
  */
 
 it('groups the three petfood pages under "Calidad e Inocuidad"', function () {
-    foreach ([QualityLocations::class, BomVersions::class, LotTraceability::class] as $page) {
+    foreach ([RetainedLots::class, BomVersions::class, LotTraceability::class] as $page) {
         $group = (new ReflectionProperty($page, 'navigationGroup'))->getValue();
 
         expect($group)->toBe('Calidad e Inocuidad');
