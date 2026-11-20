@@ -95,7 +95,7 @@ class LotTraceabilityService
      * en los moves del core (destino = ubicación CUSTOMER, partner = cliente).
      * Una fila por entrega afectada.
      *
-     * @return Collection<int, array{customer_id:?int, customer:?string, lot_id:int, lot:?string, product:?string, quantity:float, shipped_at:?Carbon}>
+     * @return Collection<int, array{customer_id:?int, customer:?string, lot_id:int, lot:?string, product:?string, quantity:float, uom:?string, shipped_at:?Carbon, reference:?string}>
      */
     public function affectedCustomers(Lot $rawLot): Collection
     {
@@ -111,7 +111,7 @@ class LotTraceabilityService
                 $query->where('state', MoveState::DONE)
                     ->whereHas('destinationLocation', fn ($location) => $location->where('type', LocationType::CUSTOMER));
             })
-            ->with(['move.partner', 'lot.product'])
+            ->with(['move.partner', 'move.operation', 'lot.product.uom'])
             ->get()
             ->map(fn (MoveLine $line) => [
                 'customer_id' => $line->move->partner_id,
@@ -120,7 +120,9 @@ class LotTraceabilityService
                 'lot'         => $line->lot?->name,
                 'product'     => $line->lot?->product?->name,
                 'quantity'    => (float) $line->qty,
+                'uom'         => $line->lot?->product?->uom?->name,
                 'shipped_at'  => $line->move->scheduled_at,
+                'reference'   => $line->move->operation?->name,
             ])
             ->values();
     }
