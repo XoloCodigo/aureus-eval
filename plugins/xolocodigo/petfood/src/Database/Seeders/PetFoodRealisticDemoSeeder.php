@@ -124,7 +124,7 @@ class PetFoodRealisticDemoSeeder extends Seeder
             'quarantine' => app(QualityLocationService::class)->ensureFor($warehouse)
                 ->firstWhere('mx_quality_role', MxQualityRole::Quarantine->value)->id,
         ];
-        $this->call(UnidadesUomSeeder::class);
+        $this->call(SpanishUomNamesSeeder::class);
         $uoms = UOM::query()->whereIn('name', ['kg', 't', 'L', 'Unidades'])->pluck('id', 'name');
 
         $root = $this->category('Alimento para mascotas');
