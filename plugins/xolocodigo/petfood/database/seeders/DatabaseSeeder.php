@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MxnCurrencySeeder::class,
             LftEmploymentTypeSeeder::class,
+            UnidadesUomSeeder::class,
         ]);
     }
 }

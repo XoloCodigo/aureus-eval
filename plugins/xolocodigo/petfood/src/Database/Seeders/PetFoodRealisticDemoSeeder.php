@@ -72,9 +72,9 @@ class PetFoodRealisticDemoSeeder extends Seeder
 
     /** @var array<string, array{0: string, 1: float}> finished good => [uom, price per bag] */
     private const FINISHED_GOODS = [
-        self::MARKER                    => ['Units', 780.00],
-        'Croqueta Perro Cachorro 20 kg' => ['Units', 860.00],
-        'Croqueta Gato Adulto 10 kg'    => ['Units', 640.00],
+        self::MARKER                    => ['Unidades', 780.00],
+        'Croqueta Perro Cachorro 20 kg' => ['Unidades', 860.00],
+        'Croqueta Gato Adulto 10 kg'    => ['Unidades', 640.00],
     ];
 
     /** @var array<string, array{0: string, 1: int, 2: array<string, float>}> product => [code, batch qty, ingredients] */
@@ -124,7 +124,8 @@ class PetFoodRealisticDemoSeeder extends Seeder
             'quarantine' => app(QualityLocationService::class)->ensureFor($warehouse)
                 ->firstWhere('mx_quality_role', MxQualityRole::Quarantine->value)->id,
         ];
-        $uoms = UOM::query()->whereIn('name', ['kg', 't', 'L', 'Units'])->pluck('id', 'name');
+        $this->call(UnidadesUomSeeder::class);
+        $uoms = UOM::query()->whereIn('name', ['kg', 't', 'L', 'Unidades'])->pluck('id', 'name');
 
         $root = $this->category('Alimento para mascotas');
         $categories = [
