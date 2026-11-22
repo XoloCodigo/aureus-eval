@@ -50,10 +50,7 @@ class RetainedLots extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(ProductQuantity::query()
-                ->with(['lot', 'product.uom', 'location'])
-                ->whereIn('location_id', $this->quality()->qualityLocations()->modelKeys())
-                ->where('quantity', '>', 0))
+            ->query($this->quality()->retainedStock()->with(['lot', 'product.uom', 'location']))
             ->defaultSort('location_id')
             ->emptyStateHeading('No hay lotes retenidos')
             ->emptyStateDescription('Usa “Retener lote” cuando un lote deba esperar análisis o no se pueda usar.')

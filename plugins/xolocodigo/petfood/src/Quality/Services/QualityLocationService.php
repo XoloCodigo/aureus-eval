@@ -2,6 +2,7 @@
 
 namespace XoloCodigo\PetFood\Quality\Services;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -49,6 +50,14 @@ class QualityLocationService
             ->whereNotNull('mx_quality_role')
             ->when($role, fn ($query) => $query->where('mx_quality_role', $role->value))
             ->get();
+    }
+
+    /** Lot stock held in a quality area: the rows of "Lotes retenidos". */
+    public function retainedStock(): Builder
+    {
+        return ProductQuantity::query()
+            ->whereIn('location_id', $this->qualityLocations()->modelKeys())
+            ->where('quantity', '>', 0);
     }
 
     /** The warehouse's location for a quality role, created when missing. */

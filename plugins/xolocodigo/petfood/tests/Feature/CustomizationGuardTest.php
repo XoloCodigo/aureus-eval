@@ -4,6 +4,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Webkul\Support\Enums\NavigationGroup;
+use XoloCodigo\PetFood\Quality\Filament\Pages\QualityOverview;
 use XoloCodigo\PetFood\Quality\Filament\Pages\RetainedLots;
 use XoloCodigo\PetFood\Recipes\Filament\Pages\BomVersions;
 use XoloCodigo\PetFood\Traceability\Filament\Pages\LotTraceability;
@@ -16,8 +17,8 @@ use XoloCodigo\PetFood\Traceability\Filament\Pages\LotTraceability;
  * ingredient merely exists. See [[styling-no-build-deploy]] / [[project-upstream-sync]].
  */
 
-it('groups the three petfood pages under "Calidad e Inocuidad"', function () {
-    foreach ([RetainedLots::class, BomVersions::class, LotTraceability::class] as $page) {
+it('groups the petfood pages under "Calidad e Inocuidad"', function () {
+    foreach ([QualityOverview::class, RetainedLots::class, BomVersions::class, LotTraceability::class] as $page) {
         $group = (new ReflectionProperty($page, 'navigationGroup'))->getValue();
 
         expect($group)->toBe('Calidad e Inocuidad');

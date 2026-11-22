@@ -5,6 +5,7 @@ namespace XoloCodigo\PetFood\Recipes\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Webkul\Manufacturing\Models\BillOfMaterial;
+use Webkul\Security\Models\User;
 
 /**
  * An immutable snapshot of a bill of materials' recipe, with a validity window.
@@ -36,5 +37,10 @@ class BomVersion extends Model
     public function billOfMaterial(): BelongsTo
     {
         return $this->belongsTo(BillOfMaterial::class, 'bill_of_material_id');
+    }
+
+    public function changedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'changed_by');
     }
 }
